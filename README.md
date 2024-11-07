@@ -4,19 +4,34 @@ A (blazingly-fast) PDF viewer for terminals using the Kitty image protocol (writ
 [^1]: This demo shows me editing a Typst file that automatically compiles with each change, prompting fancy-cat to re-render whenever the PDF updates.
 > [!NOTE]  
 > This project is under active development
-## Instructions
+## Usage
+The keymappings and other options can be found and changed in the config file [here](./src/config.zig).
+## Build Instructions
 ### Requirements
 - Terminal emulator with the Kitty image protocol (e.g. Kitty, WezTerm, Konsole, etc.)
 - [mupdf](https://mupdf.readthedocs.io/en/latest/quick-start-guide.html)
-- Zig
+#### MacOS
+``` sh
+brew install mupdf
+```
+#### Linux
+``` sh
+apt install mupdf
+```
 ### Build
-> [!IMPORTANT]
-> At the moment there is no dependency manager, so you will need to manually install the requirements.
+```sh
+zig build --fetch
+```
+### Run
 ```
 zig build run -- <path-to-pdf> <optional-page-number>
 ```
 ## Features
 - [x] Filewatch
 - [x] Navigate pages
+- [x] Double buffering
+- [x] MacOS support
+- [ ] Linux support
 - [ ] Zoom
 - [ ] Ghostty support
+- [ ] Cache

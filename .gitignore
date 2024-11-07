@@ -25,3 +25,4 @@ example.pdf
 *.typst
 target/
 *.jpg
+src/temp-main.zig
