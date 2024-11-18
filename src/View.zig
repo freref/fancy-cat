@@ -64,7 +64,6 @@ pub fn deinit(self: *Self) void {
         w.deinit();
     }
     if (self.page_info_text.len > 0) self.allocator.free(self.page_info_text);
-    if (self.current_page) |img| self.vx.freeImage(self.tty.anyWriter(), img.id);
     self.pdf_handler.deinit();
     self.vx.deinit(self.allocator, self.tty.anyWriter());
     self.tty.deinit();
@@ -186,7 +185,7 @@ pub fn drawCurrentPage(self: *Self, win: vaxis.Window) !void {
         );
         defer self.allocator.free(encoded_image.base64);
 
-        const new_image = try self.vx.transmitPreEncodedImage(
+        self.current_page = try self.vx.transmitPreEncodedImage(
             self.tty.anyWriter(),
             encoded_image.base64,
             encoded_image.width,
@@ -194,11 +193,6 @@ pub fn drawCurrentPage(self: *Self, win: vaxis.Window) !void {
             .rgb,
         );
 
-        if (self.current_page) |old_img| {
-            self.vx.freeImage(self.tty.anyWriter(), old_img.id);
-        }
-
-        self.current_page = new_image;
         self.reload = false;
     }
 
