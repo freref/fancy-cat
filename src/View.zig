@@ -89,6 +89,7 @@ pub fn run(self: *Self) !void {
     };
     try loop.init();
     try loop.start();
+    defer loop.stop();
     try self.vx.enterAltScreen(self.tty.anyWriter());
     try self.vx.queryTerminal(self.tty.anyWriter(), 1 * std.time.ns_per_s);
     try self.vx.setMouseMode(self.tty.anyWriter(), true);
