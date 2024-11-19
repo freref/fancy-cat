@@ -28,6 +28,8 @@ apt install \
     libmujs-dev \
     zlib1g-dev
 ```
+> [!IMPORTANT]  
+> On some Linux distributions (e.g., Fedora, Arch), replace `mupdf-third` with `mupdf` in ``build.zig`` to compile successfully.
 ### Build
 ```sh
 zig build --fetch
