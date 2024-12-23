@@ -15,6 +15,12 @@
 fancy-cat <path-to-pdf> <optional-page-number>
 ```
 Keymappings and other options can be found and changed in ``src/config.zig``.
+## Installation
+### Arch Linux
+[fancy-cat](https://aur.archlinux.org/packages/fancy-cat) is available as a package in the AUR. You can install it using an AUR helper (e.g., paru):
+```sh
+paru -S fancy-cat
+```
 ## Build Instructions
 ### Requirements
 - Zig version ``0.13.0``
