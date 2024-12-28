@@ -161,19 +161,7 @@ fn handleKeyStroke(self: *Self, key: vaxis.Key) !void {
     } else if (key.matches(km.go_to_page.key, km.go_to_page.modifiers) and !self.is_changing_page) {
         self.is_changing_page = true;
     } else if (key.codepoint >= 48 and key.codepoint <= 57) {
-        var num: i32 = 0;
-        switch (key.codepoint) {
-            49 => num = 1,
-            50 => num = 2,
-            51 => num = 3,
-            52 => num = 4,
-            53 => num = 5,
-            54 => num = 6,
-            55 => num = 7,
-            56 => num = 8,
-            57 => num = 9,
-            else => {},
-        }
+        const num: i32 = key.codepoint - 48;
         if (self.change_page_num == 0) {
             self.change_page_num = num;
         } else {
