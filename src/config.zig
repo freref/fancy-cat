@@ -8,6 +8,7 @@ pub const KeyMap = struct {
     pub const scroll_right = .{ .key = 'l', .modifiers = .{} };
     pub const zoom_in = .{ .key = 'i', .modifiers = .{} };
     pub const zoom_out = .{ .key = 'o', .modifiers = .{} };
+    pub const go_to_page = .{ .key = 'g', .modifiers = .{} };
     pub const quit = .{ .key = 'c', .modifiers = .{ .ctrl = true } };
 };
 
