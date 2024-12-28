@@ -177,7 +177,6 @@ fn handleKeyStroke(self: *Self, key: vaxis.Key) !void {
                 self.pdf_handler.resetZoomAndScroll();
             }
         }
-        return;
     }
 
     self.reload = true;
