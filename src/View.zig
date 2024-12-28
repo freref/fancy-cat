@@ -25,6 +25,8 @@ current_page: ?vaxis.Image,
 watcher: ?fzwatch.Watcher,
 thread: ?std.Thread,
 reload: bool,
+is_changing_page: bool,
+change_page_num: i32,
 
 pub fn init(allocator: std.mem.Allocator, args: [][]const u8) !Self {
     const path = args[1];
@@ -54,6 +56,8 @@ pub fn init(allocator: std.mem.Allocator, args: [][]const u8) !Self {
         .mouse = null,
         .thread = null,
         .reload = false,
+        .is_changing_page = false,
+        .change_page_num = 0,
     };
 }
 
@@ -154,6 +158,38 @@ fn handleKeyStroke(self: *Self, key: vaxis.Key) !void {
         self.pdf_handler.scroll(.Left);
     } else if (key.matches(km.scroll_right.key, km.scroll_right.modifiers)) {
         self.pdf_handler.scroll(.Right);
+    } else if (key.matches(km.go_to_page.key, km.go_to_page.modifiers) and !self.is_changing_page) {
+        self.is_changing_page = true;
+    } else if (key.codepoint >= 48 and key.codepoint <= 57) {
+        var num: i32 = 0;
+        switch (key.codepoint) {
+            49 => num = 1,
+            50 => num = 2,
+            51 => num = 3,
+            52 => num = 4,
+            53 => num = 5,
+            54 => num = 6,
+            55 => num = 7,
+            56 => num = 8,
+            57 => num = 9,
+            else => {},
+        }
+        if (self.change_page_num == 0) {
+            self.change_page_num = num;
+        } else {
+            self.change_page_num = (self.change_page_num * 10) + num;
+        }
+    } else if (key.matches(km.go_to_page.key, km.go_to_page.modifiers) and self.is_changing_page) {
+        self.is_changing_page = false;
+        const change_to = self.change_page_num - 1;
+        self.change_page_num = 0;
+        if (change_to >= 0) {
+            if (self.pdf_handler.goToPage(change_to)) {
+                self.resetCurrentPage();
+                self.pdf_handler.resetZoomAndScroll();
+            }
+        }
+        return;
     }
 
     self.reload = true;
