@@ -38,6 +38,8 @@ zoom: f32,
 size: f32,
 y_offset: f32,
 x_offset: f32,
+width: f32,
+height: f32,
 
 pub fn init(allocator: std.mem.Allocator, path: []const u8, initial_page: ?u16) !Self {
     const ctx = c.fz_new_context(null, null, c.FZ_STORE_UNLIMITED) orelse {
@@ -77,6 +79,8 @@ pub fn init(allocator: std.mem.Allocator, path: []const u8, initial_page: ?u16) 
         .size = 0,
         .y_offset = 0,
         .x_offset = 0,
+        .width = 0,
+        .height = 0,
     };
 }
 
@@ -120,6 +124,9 @@ pub fn renderPage(
         @as(f32, @floatFromInt(window_width)) / bound.x1,
         @as(f32, @floatFromInt(window_height)) / bound.y1,
     );
+
+    self.width = @as(f32, bound.x1);
+    self.height = @as(f32, bound.y1);
     if (self.size == 0) self.size = scale * config.General.size;
     if (self.zoom == 0) self.zoom = self.size;
 
@@ -193,9 +200,14 @@ pub fn changePage(self: *Self, delta: i32) bool {
 }
 
 pub fn adjustZoom(self: *Self, increase: bool) void {
+    const factor = self.size * config.General.zoom_step / 2;
     if (increase) {
         self.zoom *= (config.General.zoom_step + 1);
+        self.x_offset -= factor * self.width / self.zoom;
+        self.y_offset -= factor * self.height / self.zoom;
     } else {
+        self.x_offset += factor * self.width / self.zoom;
+        self.y_offset += factor * self.height / self.zoom;
         self.zoom /= (config.General.zoom_step + 1);
     }
 }
