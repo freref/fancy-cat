@@ -1,0 +1,49 @@
+name: test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  compile:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.13.0
+
+      - name: Install MuPDF (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libmupdf-dev \
+                        libharfbuzz-dev \
+                        libfreetype6-dev \
+                        libjbig2dec0-dev \
+                        libjpeg-dev \
+                        libopenjp2-7-dev \
+                        libgumbo-dev \
+                        libmujs-dev \
+                        zlib1g-dev
+
+      - name: Install MuPDF (macOS)
+        if: matrix.os == 'macos-latest'
+        run: brew install mupdf
+
+      - run: zig build
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: goto-bus-stop/setup-zig@v2
+      - run: zig fmt --check src/*.zig
