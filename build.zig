@@ -35,6 +35,8 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    exe.headerpad_max_install_names = true;
+
     const deps = .{
         .vaxis = b.dependency("vaxis", .{ .target = target, .optimize = optimize }),
         .fzwatch = b.dependency("fzwatch", .{ .target = target, .optimize = optimize }),
