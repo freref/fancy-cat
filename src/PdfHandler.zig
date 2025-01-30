@@ -213,12 +213,40 @@ pub fn adjustZoom(self: *Self, increase: bool) void {
 }
 
 pub fn scroll(self: *Self, direction: ScrollDirection) void {
-    const step = config.General.scroll_step;
+    const step = config.General.scroll_step / self.zoom;
     switch (direction) {
-        .Up => self.y_offset += step,
-        .Down => self.y_offset -= step,
-        .Left => self.x_offset += step,
-        .Right => self.x_offset -= step,
+        .Up => {
+            const translation = self.y_offset + step;
+            if (self.y_offset < translation) {
+                self.y_offset = translation;
+            } else {
+                self.y_offset = std.math.nextAfter(f32, self.y_offset, std.math.inf(f32));
+            }
+        },
+        .Down => {
+            const translation = self.y_offset - step; 
+            if (self.y_offset > translation) {
+                self.y_offset = translation;
+            } else {
+                self.y_offset = std.math.nextAfter(f32, self.y_offset, -std.math.inf(f32));
+            }
+        },
+        .Left => {
+            const translation = self.x_offset + step;
+            if (self.x_offset < translation) {
+                self.x_offset = translation;
+            } else {
+                self.x_offset = std.math.nextAfter(f32, self.x_offset, std.math.inf(f32));
+            }
+        },
+        .Right => {
+            const translation = self.x_offset - step;
+            if (self.x_offset > translation) {
+                self.x_offset = translation;
+            } else {
+                self.x_offset = std.math.nextAfter(f32, self.x_offset, -std.math.inf(f32));
+            }
+        },            
     }
 }
 
