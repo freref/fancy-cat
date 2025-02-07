@@ -159,10 +159,27 @@ fn handleKeyStroke(self: *Self, key: vaxis.Key) !void {
     self.reload = true;
 }
 
+fn handleMouseScroll(self: *Self, button: vaxis.Button) void {
+    switch (button) {
+        .wheel_up => self.pdf_handler.scroll(.Up),
+        .wheel_down => self.pdf_handler.scroll(.Down),
+        else => {},
+    }
+    self.reload = true;
+}
+
 pub fn update(self: *Self, event: Event) !void {
     switch (event) {
         .key_press => |key| try self.handleKeyStroke(key),
-        .mouse => |mouse| self.mouse = mouse,
+        .mouse => |mouse| {
+            self.mouse = mouse;
+            switch (mouse.button) {
+                .wheel_up => self.pdf_handler.scroll(.Up),
+                .wheel_down => self.pdf_handler.scroll(.Down),
+                else => {},
+            }
+            self.reload = true;
+        },
         .winsize => |ws| {
             try self.vx.resize(self.allocator, self.tty.anyWriter(), ws);
             self.pdf_handler.resetZoomAndScroll();
