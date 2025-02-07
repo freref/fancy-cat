@@ -55,11 +55,11 @@ zig build --fetch
 zig build --release=fast
 ```
 
-There is a [known issue](https://github.com/freref/fancy-cat/issues/18) with some processors; if the build fails on step 7/10 with the error `LLVM ERROR: Do not know how to expand the result of this operator!` then try the command below instead:
-
-```
-zig build --release=fast -Dcpu="skylake"
-```
+> [!NOTE]
+> There is a [known issue](https://github.com/freref/fancy-cat/issues/18) with some processors; if the build fails on step 7/10 with the error `LLVM ERROR: Do not know how to expand the result of this operator!` then try the command below instead:
+> ```
+> zig build --release=fast -Dcpu="skylake"
+> ```
 
 3. Install:  
 ```
