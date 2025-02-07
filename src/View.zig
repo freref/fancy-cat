@@ -173,10 +173,18 @@ pub fn update(self: *Self, event: Event) !void {
         .key_press => |key| try self.handleKeyStroke(key),
         .mouse => |mouse| {
             self.mouse = mouse;
-            switch (mouse.button) {
-                .wheel_up => self.pdf_handler.scroll(.Up),
-                .wheel_down => self.pdf_handler.scroll(.Down),
-                else => {},
+            if (mouse.mods.ctrl) {
+                switch (mouse.button) {
+                    .wheel_up => self.pdf_handler.adjustZoom(true),
+                    .wheel_down => self.pdf_handler.adjustZoom(false),
+                    else => {},
+                }
+            } else {
+                switch (mouse.button) {
+                    .wheel_up => self.pdf_handler.scroll(.Up),
+                    .wheel_down => self.pdf_handler.scroll(.Down),
+                    else => {},
+                }
             }
             self.reload = true;
         },
