@@ -154,6 +154,8 @@ fn handleKeyStroke(self: *Self, key: vaxis.Key) !void {
         self.pdf_handler.scroll(.Left);
     } else if (key.matches(km.scroll_right.key, km.scroll_right.modifiers)) {
         self.pdf_handler.scroll(.Right);
+    } else if (key.matches(km.colorize.key, km.colorize.modifiers)) {
+        self.pdf_handler.toggleColor();
     }
 
     self.reload = true;
