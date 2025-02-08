@@ -256,3 +256,7 @@ pub fn resetZoomAndScroll(self: *Self) void {
     self.y_offset = 0;
     self.x_offset = 0;
 }
+
+pub fn isMinZoom(self: *Self) bool {
+    return self.zoom <= self.size;
+}

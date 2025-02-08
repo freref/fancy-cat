@@ -180,10 +180,29 @@ pub fn update(self: *Self, event: Event) !void {
                     else => {},
                 }
             } else {
-                switch (mouse.button) {
-                    .wheel_up => self.pdf_handler.scroll(.Up),
-                    .wheel_down => self.pdf_handler.scroll(.Down),
-                    else => {},
+                // If at minimum zoom, change pages instead of scrolling
+                if (self.pdf_handler.isMinZoom()) {
+                    switch (mouse.button) {
+                        .wheel_up => {
+                            if (self.pdf_handler.changePage(-1)) {
+                                self.resetCurrentPage();
+                                self.pdf_handler.resetZoomAndScroll();
+                            }
+                        },
+                        .wheel_down => {
+                            if (self.pdf_handler.changePage(1)) {
+                                self.resetCurrentPage();
+                                self.pdf_handler.resetZoomAndScroll();
+                            }
+                        },
+                        else => {},
+                    }
+                } else {
+                    switch (mouse.button) {
+                        .wheel_up => self.pdf_handler.scroll(.Up),
+                        .wheel_down => self.pdf_handler.scroll(.Down),
+                        else => {},
+                    }
                 }
             }
             self.reload = true;
