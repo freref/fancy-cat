@@ -199,6 +199,14 @@ pub fn changePage(self: *Self, delta: i32) bool {
     return false;
 }
 
+pub fn goToPage(self: *Self, pageNum: i32) bool {
+    if (pageNum >= 0 and pageNum <= self.total_pages) {
+        self.current_page_number = @as(u16, @intCast(pageNum));
+        return true;
+    }
+    return false;
+}
+
 pub fn adjustZoom(self: *Self, increase: bool) void {
     const factor = self.size * config.General.zoom_step / 2;
     if (increase) {
