@@ -8,6 +8,7 @@ pub const KeyMap = struct {
     pub const scroll_right = .{ .key = 'l', .modifiers = .{} };
     pub const zoom_in = .{ .key = 'i', .modifiers = .{} };
     pub const zoom_out = .{ .key = 'o', .modifiers = .{} };
+    pub const colorize = .{ .key = 'z', .modifiers = .{} };
     pub const quit = .{ .key = 'c', .modifiers = .{ .ctrl = true } };
 };
 
@@ -19,7 +20,9 @@ pub const FileMonitor = struct {
 };
 
 pub const General = struct {
-    pub const darkmode: bool = false;
+    pub const colorize: bool = false;
+    pub const white: u32 = 0x000000;
+    pub const black: u32 = 0xffffff;
     // size of the pdf
     // 1 is the whole screen
     pub const size: f32 = 0.90;
