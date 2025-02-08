@@ -40,6 +40,7 @@ y_offset: f32,
 x_offset: f32,
 width: f32,
 height: f32,
+colorize: bool,
 
 pub fn init(allocator: std.mem.Allocator, path: []const u8, initial_page: ?u16) !Self {
     const ctx = c.fz_new_context(null, null, c.FZ_STORE_UNLIMITED) orelse {
@@ -81,6 +82,7 @@ pub fn init(allocator: std.mem.Allocator, path: []const u8, initial_page: ?u16) 
         .x_offset = 0,
         .width = 0,
         .height = 0,
+        .colorize = config.General.colorize,
     };
 }
 
@@ -158,7 +160,11 @@ pub fn renderPage(
     c.fz_run_page(self.ctx, page, dev, c.fz_identity, null);
     c.fz_close_device(self.ctx, dev);
 
-    if (config.General.darkmode) c.fz_invert_pixmap(self.ctx, pix);
+    if (self.colorize) {
+        c.fz_tint_pixmap(self.ctx, pix, config.General.black, config.General.white);
+    } else {
+        c.fz_tint_pixmap(self.ctx, pix, 0x000000, 0xffffff);
+    }
 
     const width = bbox.x1;
     const height = bbox.y1;
@@ -210,6 +216,10 @@ pub fn adjustZoom(self: *Self, increase: bool) void {
         self.y_offset += factor * self.height / self.zoom;
         self.zoom /= (config.General.zoom_step + 1);
     }
+}
+
+pub fn toggleColor(self: *Self) void {
+    self.colorize = !self.colorize;
 }
 
 pub fn scroll(self: *Self, direction: ScrollDirection) void {
