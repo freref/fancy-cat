@@ -26,7 +26,7 @@ watcher: ?fzwatch.Watcher,
 thread: ?std.Thread,
 reload: bool,
 
-pub fn init(allocator: std.mem.Allocator, args: [][]const u8) !Self {
+pub fn init(allocator: std.mem.Allocator, args: [][:0]u8) !Self {
     const path = args[1];
     const initial_page = if (args.len == 3)
         try std.fmt.parseInt(u16, args[2], 10)
