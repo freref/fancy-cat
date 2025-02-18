@@ -17,7 +17,7 @@ Configure keys and modifiers for navigation, zoom, and program control. Each bin
   - `caps_lock`
   - `num_lock`
 
-```json
+```jsonc
 {
   "next": { "key": "n" },                           // Next page
   "prev": { "key": "p" },                           // Previous page
