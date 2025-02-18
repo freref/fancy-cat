@@ -12,8 +12,8 @@
             .hash = "1220b0c4f4a5f3df2b1268a9da04bc901ede4f8bd2938e846ee1e88783ed57cee79a",
         },
         .fastb64z = .{
-            .url = "git+https://github.com/freref/fastb64z#3bfba44545042f00cc908890a652da00dc3d7670",
-            .hash = "12206695fbabe2c3f981ea79d97afe8d4fdb7790773a4153543c63ac7e0d11e564c7",
+            .url = "https://github.com/freref/fastb64z/archive/refs/heads/master.tar.gz",
+            .hash = "1220b5a0e9aa8d4c9b0e09c41ec3a58092888e7516c05cb78b74c9be77acaebab303",
         },
     },
     .paths = .{

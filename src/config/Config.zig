@@ -62,7 +62,7 @@ pub fn init(allocator: std.mem.Allocator) !Self {
     const home = try std.process.getEnvVarOwned(allocator, "HOME");
     defer if (home.len != 1) allocator.free(home);
 
-    var config_path_buf: [std.fs.MAX_PATH_BYTES]u8 = undefined;
+    var config_path_buf: [std.fs.max_path_bytes]u8 = undefined;
     const config_dir = try std.fmt.bufPrint(&config_path_buf, "{s}/.config/fancy-cat", .{home});
 
     std.fs.makeDirAbsolute(config_dir) catch |err| {
@@ -258,7 +258,7 @@ fn parseStatusBar(value: std.json.Value, allocator: std.mem.Allocator) !StatusBa
         const bg_rgb = bg.get("rgb").?.array;
         const fg_rgb = fg.get("rgb").?.array;
 
-        const style = .{
+        const style: vaxis.Cell.Style = .{
             .bg = .{ .rgb = .{
                 try std.json.innerParseFromValue(u8, allocator, bg_rgb.items[0], .{}),
                 try std.json.innerParseFromValue(u8, allocator, bg_rgb.items[1], .{}),
