@@ -1,6 +1,3 @@
-const Self = @This();
-const std = @import("std");
-
 // config
 pub const KeyMap = struct {
     pub const next = .{ .key = 'n', .modifiers = .{} };
@@ -43,27 +40,3 @@ pub const StatusBar = struct {
         .fg = .{ .rgb = .{ 255, 255, 255 } },
     };
 };
-
-pub fn init(allocator: std.mem.Allocator, path: []const u8) !Self {
-    const file = try std.fs.cwd().openFile(path, .{});
-    defer file.close();
-
-    const content = try file.readToEndAlloc(allocator, 1024 * 1024);
-    defer allocator.free(content);
-
-    var parser = std.json.Parser.init(allocator, false);
-    defer parser.deinit();
-
-    var tree = try parser.parse(content);
-    defer tree.deinit();
-
-    const root = tree.root.Object;
-
-    _ = root;
-
-    return Self{};
-    //.key_map = try parseKeyMap(root.get("KeyMap").?),
-    //.file_monitor = try parseFileMonitor(root.get("FileMonitor").?),
-    //.general = try parseGeneral(root.get("General").?),
-    //.status_bar = try parseStatusBar(root.get("StatusBar").?),
-}

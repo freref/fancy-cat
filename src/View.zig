@@ -2,7 +2,7 @@ const Self = @This();
 const std = @import("std");
 const vaxis = @import("vaxis");
 const fzwatch = @import("fzwatch");
-const config = @import("config");
+const Config = @import("Config.zig");
 const PdfHandler = @import("PdfHandler.zig");
 
 pub const panic = vaxis.panic_handler;
@@ -37,7 +37,7 @@ pub fn init(allocator: std.mem.Allocator, args: [][]const u8) !Self {
     errdefer pdf_handler.deinit();
 
     var watcher: ?fzwatch.Watcher = null;
-    if (config.FileMonitor.enabled) {
+    if (Config.FileMonitor.enabled) {
         watcher = try fzwatch.Watcher.init(allocator);
         if (watcher) |*w| try w.addFile(path);
     }
@@ -79,7 +79,7 @@ fn callback(context: ?*anyopaque, event: fzwatch.Event) void {
 }
 
 fn watcherThread(watcher: *fzwatch.Watcher) !void {
-    try watcher.start(.{ .latency = config.FileMonitor.latency });
+    try watcher.start(.{ .latency = Config.FileMonitor.latency });
 }
 
 pub fn run(self: *Self) !void {
@@ -94,7 +94,7 @@ pub fn run(self: *Self) !void {
     try self.vx.queryTerminal(self.tty.anyWriter(), 1 * std.time.ns_per_s);
     try self.vx.setMouseMode(self.tty.anyWriter(), true);
 
-    if (config.FileMonitor.enabled) {
+    if (Config.FileMonitor.enabled) {
         if (self.watcher) |*w| {
             w.setCallback(callback, &loop);
             self.thread = try std.Thread.spawn(.{}, watcherThread, .{w});
@@ -124,7 +124,7 @@ fn resetCurrentPage(self: *Self) void {
 }
 
 fn handleKeyStroke(self: *Self, key: vaxis.Key) !void {
-    const km = config.KeyMap;
+    const km = Config.KeyMap;
     // non reload keys
     if (key.matches(km.quit.key, km.quit.modifiers)) {
         self.should_quit = true;
@@ -214,10 +214,10 @@ pub fn drawStatusBar(self: *Self, win: vaxis.Window) !void {
         .height = 1,
     });
 
-    status_bar.fill(vaxis.Cell{ .style = config.StatusBar.style });
+    status_bar.fill(vaxis.Cell{ .style = Config.StatusBar.style });
 
     _ = status_bar.print(
-        &.{.{ .text = self.pdf_handler.path, .style = config.StatusBar.style }},
+        &.{.{ .text = self.pdf_handler.path, .style = Config.StatusBar.style }},
         .{ .col_offset = 1 },
     );
 
@@ -232,7 +232,7 @@ pub fn drawStatusBar(self: *Self, win: vaxis.Window) !void {
     );
 
     _ = status_bar.print(
-        &.{.{ .text = self.page_info_text, .style = config.StatusBar.style }},
+        &.{.{ .text = self.page_info_text, .style = Config.StatusBar.style }},
         .{ .col_offset = @intCast(win.width - self.page_info_text.len - 1) },
     );
 }
@@ -242,7 +242,7 @@ pub fn draw(self: *Self) !void {
     win.clear();
 
     try self.drawCurrentPage(win);
-    if (config.StatusBar.enabled) {
+    if (Config.StatusBar.enabled) {
         try self.drawStatusBar(win);
     }
 }
