@@ -55,32 +55,66 @@ file_monitor: FileMonitor,
 general: General,
 status_bar: StatusBar,
 
-pub fn init(allocator: std.mem.Allocator, path: []const u8) !Self {
-    //const file = try std.fs.cwd().openFile(path, .{});
-    //defer file.close();
-    //
-    //const content = try file.readToEndAlloc(allocator, 1024 * 1024);
-    //defer allocator.free(content);
-    //
-    //var parser = std.json.Parser.init(allocator, false);
-    //defer parser.deinit();
-    //
-    //var tree = try parser.parse(content);
-    //defer tree.deinit();
-    //
-    //const root = tree.root.Object;
+pub fn init(allocator: std.mem.Allocator) !Self {
+    // XXX This seems like an odd way to do this (temp)
+    var config_path_buf: [std.fs.MAX_PATH_BYTES]u8 = undefined;
+    const home = try std.process.getEnvVarOwned(allocator, "HOME");
+    const config_path = try std.fmt.bufPrint(&config_path_buf, "{s}/.config/fancy-cat/config.json", .{home});
+    defer if (home.len != 1) allocator.free(home);
 
-    _ = path;
-    _ = allocator;
+    const file = std.fs.openFileAbsolute(config_path, .{}) catch {
+        return Self{
+            .key_map = .{},
+            .file_monitor = .{},
+            .general = .{},
+            .status_bar = .{},
+        };
+    };
+    defer file.close();
+
+    const content = try file.readToEndAlloc(allocator, 1024 * 1024);
+    defer allocator.free(content);
+
+    var parsed = try std.json.parseFromSlice(std.json.Value, allocator, content, .{});
+    defer parsed.deinit();
+
+    const root = parsed.value.object;
 
     return Self{
-        .key_map = .{},
-        .file_monitor = .{},
-        .general = .{},
-        .status_bar = .{},
+        .key_map = if (root.get("KeyMap")) |km| try parseKeyMap(km) else .{},
+        .file_monitor = if (root.get("FileMonitor")) |fm| try parseFileMonitor(fm) else .{},
+        .general = if (root.get("General")) |g| try parseGeneral(g) else .{},
+        .status_bar = if (root.get("StatusBar")) |sb| try parseStatusBar(sb) else .{},
     };
+
     //.key_map = try parseKeyMap(root.get("KeyMap").?),
     //.file_monitor = try parseFileMonitor(root.get("FileMonitor").?),
     //.general = try parseGeneral(root.get("General").?),
     //.status_bar = try parseStatusBar(root.get("StatusBar").?),
+}
+
+fn parseKeyMap(value: std.json.Value) !KeyMap {
+    _ = value;
+    return KeyMap{};
+}
+
+fn parseKeyBinding(value: std.json.Value) !KeyBinding {
+    _ = value;
+    return KeyBinding{};
+}
+
+fn parseFileMonitor(value: std.json.Value) !FileMonitor {
+    _ = value;
+    return FileMonitor{};
+}
+
+fn parseGeneral(value: std.json.Value) !General {
+    _ = value;
+    return General{};
+}
+
+fn parseStatusBar(value: std.json.Value) !StatusBar {
+    _ = value;
+
+    return .{};
 }

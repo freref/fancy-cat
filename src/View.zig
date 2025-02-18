@@ -34,7 +34,7 @@ pub fn init(allocator: std.mem.Allocator, args: [][]const u8) !Self {
     else
         null;
 
-    const config = try Config.init(allocator, "config.json");
+    const config = try Config.init(allocator);
 
     var pdf_handler = try PdfHandler.init(allocator, path, initial_page, config);
     errdefer pdf_handler.deinit();
