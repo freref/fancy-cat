@@ -25,6 +25,7 @@ current_page: ?vaxis.Image,
 watcher: ?fzwatch.Watcher,
 thread: ?std.Thread,
 reload: bool,
+config: Config,
 
 pub fn init(allocator: std.mem.Allocator, args: [][]const u8) !Self {
     const path = args[1];
@@ -33,11 +34,13 @@ pub fn init(allocator: std.mem.Allocator, args: [][]const u8) !Self {
     else
         null;
 
-    var pdf_handler = try PdfHandler.init(allocator, path, initial_page);
+    const config = try Config.init(allocator, "config.json");
+
+    var pdf_handler = try PdfHandler.init(allocator, path, initial_page, config);
     errdefer pdf_handler.deinit();
 
     var watcher: ?fzwatch.Watcher = null;
-    if (Config.FileMonitor.enabled) {
+    if (config.file_monitor.enabled) {
         watcher = try fzwatch.Watcher.init(allocator);
         if (watcher) |*w| try w.addFile(path);
     }
@@ -54,6 +57,7 @@ pub fn init(allocator: std.mem.Allocator, args: [][]const u8) !Self {
         .mouse = null,
         .thread = null,
         .reload = false,
+        .config = config,
     };
 }
 
@@ -78,8 +82,8 @@ fn callback(context: ?*anyopaque, event: fzwatch.Event) void {
     }
 }
 
-fn watcherThread(watcher: *fzwatch.Watcher) !void {
-    try watcher.start(.{ .latency = Config.FileMonitor.latency });
+fn watcherThread(self: *Self, watcher: *fzwatch.Watcher) !void {
+    try watcher.start(.{ .latency = self.config.file_monitor.latency });
 }
 
 pub fn run(self: *Self) !void {
@@ -94,10 +98,10 @@ pub fn run(self: *Self) !void {
     try self.vx.queryTerminal(self.tty.anyWriter(), 1 * std.time.ns_per_s);
     try self.vx.setMouseMode(self.tty.anyWriter(), true);
 
-    if (Config.FileMonitor.enabled) {
+    if (self.config.file_monitor.enabled) {
         if (self.watcher) |*w| {
             w.setCallback(callback, &loop);
-            self.thread = try std.Thread.spawn(.{}, watcherThread, .{w});
+            self.thread = try std.Thread.spawn(.{}, watcherThread, .{ self, w });
         }
     }
 
@@ -124,7 +128,7 @@ fn resetCurrentPage(self: *Self) void {
 }
 
 fn handleKeyStroke(self: *Self, key: vaxis.Key) !void {
-    const km = Config.KeyMap;
+    const km = self.config.key_map;
     // non reload keys
     if (key.matches(km.quit.key, km.quit.modifiers)) {
         self.should_quit = true;
