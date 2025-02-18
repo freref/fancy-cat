@@ -2,7 +2,7 @@ const Self = @This();
 const std = @import("std");
 const vaxis = @import("vaxis");
 const fzwatch = @import("fzwatch");
-const Config = @import("Config.zig");
+const Config = @import("config/Config.zig");
 const PdfHandler = @import("PdfHandler.zig");
 
 pub const panic = vaxis.panic_handler;

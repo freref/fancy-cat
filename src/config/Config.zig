@@ -56,19 +56,33 @@ general: General,
 status_bar: StatusBar,
 
 pub fn init(allocator: std.mem.Allocator) !Self {
-    // XXX This seems like an odd way to do this (temp)
-    var config_path_buf: [std.fs.MAX_PATH_BYTES]u8 = undefined;
+    // Create config file in ~/.config/fancy-cat/config.json
+    const config_file = @embedFile("config.json");
     const home = try std.process.getEnvVarOwned(allocator, "HOME");
-    const config_path = try std.fmt.bufPrint(&config_path_buf, "{s}/.config/fancy-cat/config.json", .{home});
     defer if (home.len != 1) allocator.free(home);
 
-    const file = std.fs.openFileAbsolute(config_path, .{}) catch {
-        return Self{
-            .key_map = .{},
-            .file_monitor = .{},
-            .general = .{},
-            .status_bar = .{},
-        };
+    var config_path_buf: [std.fs.MAX_PATH_BYTES]u8 = undefined;
+    const config_dir = try std.fmt.bufPrint(&config_path_buf, "{s}/.config/fancy-cat", .{home});
+
+    std.fs.makeDirAbsolute(config_dir) catch |err| {
+        if (err != error.PathAlreadyExists) return err;
+    };
+
+    const config_path = try std.fmt.bufPrint(&config_path_buf, "{s}/.config/fancy-cat/config.json", .{home});
+
+    const file = blk: {
+        if (std.fs.openFileAbsolute(config_path, .{})) |f| {
+            break :blk f;
+        } else |err| {
+            if (err == error.FileNotFound) {
+                const f = try std.fs.createFileAbsolute(config_path, .{});
+                defer f.close();
+                try f.writeAll(config_file);
+                break :blk try std.fs.openFileAbsolute(config_path, .{});
+            } else {
+                return err;
+            }
+        }
     };
     defer file.close();
 
@@ -86,11 +100,6 @@ pub fn init(allocator: std.mem.Allocator) !Self {
         .general = if (root.get("General")) |g| try parseGeneral(g) else .{},
         .status_bar = if (root.get("StatusBar")) |sb| try parseStatusBar(sb) else .{},
     };
-
-    //.key_map = try parseKeyMap(root.get("KeyMap").?),
-    //.file_monitor = try parseFileMonitor(root.get("FileMonitor").?),
-    //.general = try parseGeneral(root.get("General").?),
-    //.status_bar = try parseStatusBar(root.get("StatusBar").?),
 }
 
 fn parseKeyMap(value: std.json.Value) !KeyMap {
@@ -104,13 +113,47 @@ fn parseKeyBinding(value: std.json.Value) !KeyBinding {
 }
 
 fn parseFileMonitor(value: std.json.Value) !FileMonitor {
-    _ = value;
-    return FileMonitor{};
+    const obj = value.object;
+    return FileMonitor{
+        .enabled = if (obj.get("enabled")) |v| switch (v) {
+            .bool => |b| b,
+            else => return error.InvalidEnabled,
+        } else true,
+        .latency = if (obj.get("latency")) |v| switch (v) {
+            .float => |f| @floatCast(f),
+            else => return error.InvalidLatency,
+        } else 0.1,
+    };
 }
 
 fn parseGeneral(value: std.json.Value) !General {
-    _ = value;
-    return General{};
+    const obj = value.object;
+    return General{
+        .colorize = if (obj.get("colorize")) |v| switch (v) {
+            .bool => |b| b,
+            else => return error.InvalidColorize,
+        } else false,
+        .white = if (obj.get("white")) |v| switch (v) {
+            .string => |s| try std.fmt.parseInt(i32, s, 0),
+            else => return error.InvalidWhite,
+        } else 0x000000,
+        .black = if (obj.get("black")) |v| switch (v) {
+            .string => |s| try std.fmt.parseInt(i32, s, 0),
+            else => return error.InvalidBlack,
+        } else 0xffffff,
+        .size = if (obj.get("size")) |v| switch (v) {
+            .float => |f| @floatCast(f),
+            else => return error.InvalidSize,
+        } else 0.90,
+        .zoom_step = if (obj.get("zoom_step")) |v| switch (v) {
+            .float => |f| @floatCast(f),
+            else => return error.InvalidZoomStep,
+        } else 0.25,
+        .scroll_step = if (obj.get("scroll_step")) |v| switch (v) {
+            .float => |f| @floatCast(f),
+            else => return error.InvalidScrollStep,
+        } else 100.0,
+    };
 }
 
 fn parseStatusBar(value: std.json.Value) !StatusBar {
