@@ -218,10 +218,10 @@ pub fn drawStatusBar(self: *Self, win: vaxis.Window) !void {
         .height = 1,
     });
 
-    status_bar.fill(vaxis.Cell{ .style = Config.StatusBar.style });
+    status_bar.fill(vaxis.Cell{ .style = self.config.status_bar.style });
 
     _ = status_bar.print(
-        &.{.{ .text = self.pdf_handler.path, .style = Config.StatusBar.style }},
+        &.{.{ .text = self.pdf_handler.path, .style = self.config.status_bar.style }},
         .{ .col_offset = 1 },
     );
 
@@ -236,7 +236,7 @@ pub fn drawStatusBar(self: *Self, win: vaxis.Window) !void {
     );
 
     _ = status_bar.print(
-        &.{.{ .text = self.page_info_text, .style = Config.StatusBar.style }},
+        &.{.{ .text = self.page_info_text, .style = self.config.status_bar.style }},
         .{ .col_offset = @intCast(win.width - self.page_info_text.len - 1) },
     );
 }
@@ -246,7 +246,7 @@ pub fn draw(self: *Self) !void {
     win.clear();
 
     try self.drawCurrentPage(win);
-    if (Config.StatusBar.enabled) {
+    if (self.config.status_bar.enabled) {
         try self.drawStatusBar(win);
     }
 }

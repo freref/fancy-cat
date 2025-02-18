@@ -43,11 +43,11 @@ pub const General = struct {
 
 pub const StatusBar = struct {
     // status bar shows the page numbers and file name
-    pub const enabled: bool = true;
-    pub const style = .{
+    enabled: bool = true,
+    style: vaxis.Cell.Style = .{
         .bg = .{ .rgb = .{ 216, 74, 74 } },
         .fg = .{ .rgb = .{ 255, 255, 255 } },
-    };
+    },
 };
 
 key_map: KeyMap,
@@ -95,69 +95,120 @@ pub fn init(allocator: std.mem.Allocator) !Self {
     const root = parsed.value.object;
 
     return Self{
-        .key_map = if (root.get("KeyMap")) |km| try parseKeyMap(km) else .{},
-        .file_monitor = if (root.get("FileMonitor")) |fm| try parseFileMonitor(fm) else .{},
-        .general = if (root.get("General")) |g| try parseGeneral(g) else .{},
-        .status_bar = if (root.get("StatusBar")) |sb| try parseStatusBar(sb) else .{},
+        .key_map = if (root.get("KeyMap")) |km| try parseKeyMap(km, allocator) else .{},
+        .file_monitor = if (root.get("FileMonitor")) |fm| try parseFileMonitor(fm, allocator) else .{},
+        .general = if (root.get("General")) |g| try parseGeneral(g, allocator) else .{},
+        .status_bar = if (root.get("StatusBar")) |sb| try parseStatusBar(sb, allocator) else .{},
     };
 }
 
-fn parseKeyMap(value: std.json.Value) !KeyMap {
+fn parseKeyMap(value: std.json.Value, allocator: std.mem.Allocator) !KeyMap {
     _ = value;
+    _ = allocator;
     return KeyMap{};
 }
 
-fn parseKeyBinding(value: std.json.Value) !KeyBinding {
+fn parseKeyBinding(value: std.json.Value, allocator: std.mem.Allocator) !KeyBinding {
     _ = value;
+    _ = allocator;
     return KeyBinding{};
 }
 
-fn parseFileMonitor(value: std.json.Value) !FileMonitor {
+fn parseFileMonitor(value: std.json.Value, allocator: std.mem.Allocator) !FileMonitor {
     const obj = value.object;
     return FileMonitor{
-        .enabled = if (obj.get("enabled")) |v| switch (v) {
-            .bool => |b| b,
-            else => return error.InvalidEnabled,
-        } else true,
-        .latency = if (obj.get("latency")) |v| switch (v) {
-            .float => |f| @floatCast(f),
-            else => return error.InvalidLatency,
-        } else 0.1,
+        .enabled = try std.json.innerParseFromValue(
+            bool,
+            allocator,
+            obj.get("enabled") orelse .{ .bool = true },
+            .{},
+        ),
+        .latency = try std.json.innerParseFromValue(
+            f16,
+            allocator,
+            obj.get("latency") orelse .{ .float = 0.1 },
+            .{},
+        ),
     };
 }
 
-fn parseGeneral(value: std.json.Value) !General {
+fn parseGeneral(value: std.json.Value, allocator: std.mem.Allocator) !General {
     const obj = value.object;
     return General{
-        .colorize = if (obj.get("colorize")) |v| switch (v) {
-            .bool => |b| b,
-            else => return error.InvalidColorize,
-        } else false,
-        .white = if (obj.get("white")) |v| switch (v) {
-            .string => |s| try std.fmt.parseInt(i32, s, 0),
-            else => return error.InvalidWhite,
-        } else 0x000000,
-        .black = if (obj.get("black")) |v| switch (v) {
-            .string => |s| try std.fmt.parseInt(i32, s, 0),
-            else => return error.InvalidBlack,
-        } else 0xffffff,
-        .size = if (obj.get("size")) |v| switch (v) {
-            .float => |f| @floatCast(f),
-            else => return error.InvalidSize,
-        } else 0.90,
-        .zoom_step = if (obj.get("zoom_step")) |v| switch (v) {
-            .float => |f| @floatCast(f),
-            else => return error.InvalidZoomStep,
-        } else 0.25,
-        .scroll_step = if (obj.get("scroll_step")) |v| switch (v) {
-            .float => |f| @floatCast(f),
-            else => return error.InvalidScrollStep,
-        } else 100.0,
+        .colorize = try std.json.innerParseFromValue(
+            bool,
+            allocator,
+            obj.get("colorize") orelse .{ .bool = false },
+            .{},
+        ),
+        .white = try std.json.innerParseFromValue(
+            i32,
+            allocator,
+            obj.get("white") orelse .{ .string = "0x000000" },
+            .{},
+        ),
+        .black = try std.json.innerParseFromValue(
+            i32,
+            allocator,
+            obj.get("black") orelse .{ .string = "0xffffff" },
+            .{},
+        ),
+        .size = try std.json.innerParseFromValue(
+            f32,
+            allocator,
+            obj.get("size") orelse .{ .float = 0.90 },
+            .{},
+        ),
+        .zoom_step = try std.json.innerParseFromValue(
+            f32,
+            allocator,
+            obj.get("zoom_step") orelse .{ .float = 0.25 },
+            .{},
+        ),
+        .scroll_step = try std.json.innerParseFromValue(
+            f32,
+            allocator,
+            obj.get("scroll_step") orelse .{ .float = 100.0 },
+            .{},
+        ),
     };
 }
 
-fn parseStatusBar(value: std.json.Value) !StatusBar {
-    _ = value;
+fn parseStatusBar(value: std.json.Value, allocator: std.mem.Allocator) !StatusBar {
+    const obj = value.object;
+    const enabled = try std.json.innerParseFromValue(
+        bool,
+        allocator,
+        obj.get("enabled") orelse .{ .bool = true },
+        .{},
+    );
+
+    if (obj.get("style")) |style_val| {
+        const style_obj = style_val.object;
+        const bg = style_obj.get("bg").?.object;
+        const fg = style_obj.get("fg").?.object;
+
+        const bg_rgb = bg.get("rgb").?.array;
+        const fg_rgb = fg.get("rgb").?.array;
+
+        const style = .{
+            .bg = .{ .rgb = .{
+                try std.json.innerParseFromValue(u8, allocator, bg_rgb.items[0], .{}),
+                try std.json.innerParseFromValue(u8, allocator, bg_rgb.items[1], .{}),
+                try std.json.innerParseFromValue(u8, allocator, bg_rgb.items[2], .{}),
+            } },
+            .fg = .{ .rgb = .{
+                try std.json.innerParseFromValue(u8, allocator, fg_rgb.items[0], .{}),
+                try std.json.innerParseFromValue(u8, allocator, fg_rgb.items[1], .{}),
+                try std.json.innerParseFromValue(u8, allocator, fg_rgb.items[2], .{}),
+            } },
+        };
+
+        return StatusBar{
+            .enabled = enabled,
+            .style = style,
+        };
+    }
 
     return .{};
 }
