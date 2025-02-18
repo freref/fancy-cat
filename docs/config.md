@@ -43,7 +43,8 @@ Controls automatic reloading when PDF file changes. Useful for live previewing:
 
 Core display and interaction settings:
 
-The PDF viewer uses color inversion for better terminal viewing. By default, it runs in dark mode where white PDF pixels are displayed as black (0x000000) and black pixels as white (0xffffff). You can customize these colors to match your terminal theme - set white to your terminal's background color and black to your desired text.
+> [!NOTE]  
+> The PDF viewer uses color inversion for better terminal viewing. By default, it runs in dark mode where white PDF pixels are displayed as black (0x000000) and black pixels as white (0xffffff). You can customize these colors to match your terminal theme - set white to your terminal's background color and black to your desired text.
 
 - `colorize`: `bool` - Toggle color inversion for dark/light mode
 - `white`: `i32` - Hex color code for white pixels in colorized mode
