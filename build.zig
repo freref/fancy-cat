@@ -46,7 +46,6 @@ pub fn build(b: *std.Build) void {
     exe.root_module.addImport("fastb64z", deps.fastb64z.module("fastb64z"));
     exe.root_module.addImport("vaxis", deps.vaxis.module("vaxis"));
     exe.root_module.addImport("fzwatch", deps.fzwatch.module("fzwatch"));
-    exe.root_module.addImport("config", b.addModule("config", .{ .root_source_file = b.path("src/config.zig") }));
 
     addMupdfDeps(exe, target.result);
     b.installArtifact(exe);

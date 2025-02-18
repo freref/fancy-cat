@@ -2,7 +2,7 @@ const Self = @This();
 const std = @import("std");
 const fastb64z = @import("fastb64z");
 const vaxis = @import("vaxis");
-const config = @import("config");
+const Config = @import("config/Config.zig");
 const c = @cImport({
     @cInclude("mupdf/fitz.h");
     @cInclude("mupdf/pdf.h");
@@ -40,9 +40,9 @@ y_offset: f32,
 x_offset: f32,
 width: f32,
 height: f32,
-colorize: bool,
+config: Config,
 
-pub fn init(allocator: std.mem.Allocator, path: []const u8, initial_page: ?u16) !Self {
+pub fn init(allocator: std.mem.Allocator, path: []const u8, initial_page: ?u16, config: Config) !Self {
     const ctx = c.fz_new_context(null, null, c.FZ_STORE_UNLIMITED) orelse {
         std.debug.print("Failed to create mupdf context\n", .{});
         return PdfError.FailedToCreateContext;
@@ -82,7 +82,7 @@ pub fn init(allocator: std.mem.Allocator, path: []const u8, initial_page: ?u16) 
         .x_offset = 0,
         .width = 0,
         .height = 0,
-        .colorize = config.General.colorize,
+        .config = config,
     };
 }
 
@@ -129,7 +129,7 @@ pub fn renderPage(
 
     self.width = @as(f32, bound.x1);
     self.height = @as(f32, bound.y1);
-    if (self.size == 0) self.size = scale * config.General.size;
+    if (self.size == 0) self.size = scale * self.config.general.size;
     if (self.zoom == 0) self.zoom = self.size;
 
     const bbox = c.fz_make_irect(
@@ -160,8 +160,8 @@ pub fn renderPage(
     c.fz_run_page(self.ctx, page, dev, c.fz_identity, null);
     c.fz_close_device(self.ctx, dev);
 
-    if (self.colorize) {
-        c.fz_tint_pixmap(self.ctx, pix, config.General.black, config.General.white);
+    if (self.config.general.colorize) {
+        c.fz_tint_pixmap(self.ctx, pix, self.config.general.black, self.config.general.white);
     } else {
         c.fz_tint_pixmap(self.ctx, pix, 0x000000, 0xffffff);
     }
@@ -206,24 +206,24 @@ pub fn changePage(self: *Self, delta: i32) bool {
 }
 
 pub fn adjustZoom(self: *Self, increase: bool) void {
-    const factor = self.size * config.General.zoom_step / 2;
+    const factor = self.size * self.config.general.zoom_step / 2;
     if (increase) {
-        self.zoom *= (config.General.zoom_step + 1);
+        self.zoom *= (self.config.general.zoom_step + 1);
         self.x_offset -= factor * self.width / self.zoom;
         self.y_offset -= factor * self.height / self.zoom;
     } else {
         self.x_offset += factor * self.width / self.zoom;
         self.y_offset += factor * self.height / self.zoom;
-        self.zoom /= (config.General.zoom_step + 1);
+        self.zoom /= (self.config.general.zoom_step + 1);
     }
 }
 
 pub fn toggleColor(self: *Self) void {
-    self.colorize = !self.colorize;
+    self.config.general.colorize = !self.config.general.colorize;
 }
 
 pub fn scroll(self: *Self, direction: ScrollDirection) void {
-    const step = config.General.scroll_step / self.zoom;
+    const step = self.config.general.scroll_step / self.zoom;
     switch (direction) {
         .Up => {
             const translation = self.y_offset + step;

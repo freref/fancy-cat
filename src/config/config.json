@@ -1,0 +1,33 @@
+{
+  "KeyMap": {
+    "next": { "key": "n", "modifiers": [] },
+    "prev": { "key": "p", "modifiers": [] },
+    "scroll_up": { "key": "k", "modifiers": [] },
+    "scroll_down": { "key": "j", "modifiers": [] },
+    "scroll_left": { "key": "h", "modifiers": [] },
+    "scroll_right": { "key": "l", "modifiers": [] },
+    "zoom_in": { "key": "i", "modifiers": [] },
+    "zoom_out": { "key": "o", "modifiers": [] },
+    "colorize": { "key": "z", "modifiers": [] },
+    "quit": { "key": "c", "modifiers": ["ctrl"] }
+  },
+  "FileMonitor": {
+    "enabled": true,
+    "latency": 0.1
+  },
+  "General": {
+    "colorize": false,
+    "white": "0x000000",
+    "black": "0xffffff",
+    "size": 0.9,
+    "zoom_step": 0.25,
+    "scroll_step": 100.0
+  },
+  "StatusBar": {
+    "enabled": true,
+    "style": {
+      "bg": { "rgb": [216, 74, 74] },
+      "fg": { "rgb": [255, 255, 255] }
+    }
+  }
+}
