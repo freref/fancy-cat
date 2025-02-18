@@ -1,7 +1,7 @@
 .{
     .name = "fancy-cat",
     .version = "0.1.1",
-    .minimum_zig_version = "0.13.0",
+    .minimum_zig_version = "0.14.0",
     .dependencies = .{
         .vaxis = .{
             .url = "https://github.com/freref/libvaxis/archive/refs/heads/zig-0.14.0.tar.gz",
