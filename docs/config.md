@@ -4,7 +4,7 @@ Configuration file location: `~/.config/fancy-cat/config.json`
 
 ## KeyMap
 
-Configure keys and modifiers for navigation, zoom, and program control. Each binding requires:
+Each binding requires:
 
 - `key`: `u8` (single character) - The main key to trigger the action
 - `modifiers`: Array of strings - Optional modifier keys. Available modifiers:
@@ -40,8 +40,6 @@ Controls automatic reloading when PDF file changes. Useful for live previewing:
 - `latency`: `f16` - Time between file checks in seconds
 
 ## General
-
-Core display and interaction settings:
 
 > [!NOTE]  
 > fancy-cat uses color inversion for better terminal viewing. By default, it runs in dark mode where white pixels are displayed as black (0x000000) and black pixels as white (0xffffff). You can customize these colors to match your terminal theme - set white to your terminal's background color and black to your desired text.
