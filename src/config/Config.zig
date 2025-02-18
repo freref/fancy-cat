@@ -7,7 +7,8 @@ pub const KeyBinding = struct {
     modifiers: vaxis.Key.Modifiers,
 };
 
-// XXX Lot of redundancy, but I guess thats good?
+/// XXX There is a lot of redundancy, e.g the default values. Worth checking if its necessary
+/// JSON parsing is also worth looking over again
 pub const KeyMap = struct {
     next: KeyBinding = .{ .key = 'n', .modifiers = .{} },
     prev: KeyBinding = .{ .key = 'p', .modifiers = .{} },
@@ -68,7 +69,11 @@ pub fn init(allocator: std.mem.Allocator) !Self {
         if (err != error.PathAlreadyExists) return err;
     };
 
-    const config_path = try std.fmt.bufPrint(&config_path_buf, "{s}/.config/fancy-cat/config.json", .{home});
+    const config_path = try std.fmt.bufPrint(
+        &config_path_buf,
+        "{s}/.config/fancy-cat/config.json",
+        .{home},
+    );
 
     const file = blk: {
         if (std.fs.openFileAbsolute(config_path, .{})) |f| {
@@ -106,24 +111,58 @@ fn parseKeyMap(value: std.json.Value, allocator: std.mem.Allocator) !KeyMap {
     const obj = value.object;
 
     return KeyMap{
-        .next = try parseKeyBinding(obj.get("next"), allocator) orelse .{ .key = 'n', .modifiers = .{} },
-        .prev = try parseKeyBinding(obj.get("prev"), allocator) orelse .{ .key = 'p', .modifiers = .{} },
-        .scroll_up = try parseKeyBinding(obj.get("scroll_up"), allocator) orelse .{ .key = 'k', .modifiers = .{} },
-        .scroll_down = try parseKeyBinding(obj.get("scroll_down"), allocator) orelse .{ .key = 'j', .modifiers = .{} },
-        .scroll_left = try parseKeyBinding(obj.get("scroll_left"), allocator) orelse .{ .key = 'h', .modifiers = .{} },
-        .scroll_right = try parseKeyBinding(obj.get("scroll_right"), allocator) orelse .{ .key = 'l', .modifiers = .{} },
-        .zoom_in = try parseKeyBinding(obj.get("zoom_in"), allocator) orelse .{ .key = 'i', .modifiers = .{} },
-        .zoom_out = try parseKeyBinding(obj.get("zoom_out"), allocator) orelse .{ .key = 'o', .modifiers = .{} },
-        .colorize = try parseKeyBinding(obj.get("colorize"), allocator) orelse .{ .key = 'z', .modifiers = .{} },
-        .quit = try parseKeyBinding(obj.get("quit"), allocator) orelse .{ .key = 'c', .modifiers = .{ .ctrl = true } },
+        .next = try parseKeyBinding(obj.get("next"), allocator) orelse .{
+            .key = 'n',
+            .modifiers = .{},
+        },
+        .prev = try parseKeyBinding(obj.get("prev"), allocator) orelse .{
+            .key = 'p',
+            .modifiers = .{},
+        },
+        .scroll_up = try parseKeyBinding(obj.get("scroll_up"), allocator) orelse .{
+            .key = 'k',
+            .modifiers = .{},
+        },
+        .scroll_down = try parseKeyBinding(obj.get("scroll_down"), allocator) orelse .{
+            .key = 'j',
+            .modifiers = .{},
+        },
+        .scroll_left = try parseKeyBinding(obj.get("scroll_left"), allocator) orelse .{
+            .key = 'h',
+            .modifiers = .{},
+        },
+        .scroll_right = try parseKeyBinding(obj.get("scroll_right"), allocator) orelse .{
+            .key = 'l',
+            .modifiers = .{},
+        },
+        .zoom_in = try parseKeyBinding(obj.get("zoom_in"), allocator) orelse .{
+            .key = 'i',
+            .modifiers = .{},
+        },
+        .zoom_out = try parseKeyBinding(obj.get("zoom_out"), allocator) orelse .{
+            .key = 'o',
+            .modifiers = .{},
+        },
+        .colorize = try parseKeyBinding(obj.get("colorize"), allocator) orelse .{
+            .key = 'z',
+            .modifiers = .{},
+        },
+        .quit = try parseKeyBinding(obj.get("quit"), allocator) orelse .{
+            .key = 'c',
+            .modifiers = .{ .ctrl = true },
+        },
     };
 }
 
 fn parseKeyBinding(value: ?std.json.Value, allocator: std.mem.Allocator) !?KeyBinding {
-    const binding = value orelse return null;
-    const obj = binding.object;
+    const obj = value.object;
 
-    const key = try std.json.innerParseFromValue([]const u8, allocator, obj.get("key") orelse return null, .{});
+    const key = try std.json.innerParseFromValue(
+        []const u8,
+        allocator,
+        obj.get("key") orelse return null,
+        .{},
+    );
     defer allocator.free(key);
 
     var modifiers = vaxis.Key.Modifiers{};
@@ -146,6 +185,7 @@ fn parseKeyBinding(value: ?std.json.Value, allocator: std.mem.Allocator) !?KeyBi
 
 fn parseFileMonitor(value: std.json.Value, allocator: std.mem.Allocator) !FileMonitor {
     const obj = value.object;
+
     return FileMonitor{
         .enabled = try std.json.innerParseFromValue(
             bool,
@@ -169,17 +209,38 @@ fn parseGeneral(value: std.json.Value, allocator: std.mem.Allocator) !General {
     const black = obj.get("black") orelse std.json.Value{ .string = "0xffffff" };
 
     return General{
-        .colorize = try std.json.innerParseFromValue(bool, allocator, obj.get("colorize") orelse .{ .bool = false }, .{}),
+        .colorize = try std.json.innerParseFromValue(
+            bool,
+            allocator,
+            obj.get("colorize") orelse .{ .bool = false },
+            .{},
+        ),
         .white = try std.fmt.parseInt(i32, white.string[2..], 16),
         .black = try std.fmt.parseInt(i32, black.string[2..], 16),
-        .size = try std.json.innerParseFromValue(f32, allocator, obj.get("size") orelse .{ .float = 0.90 }, .{}),
-        .zoom_step = try std.json.innerParseFromValue(f32, allocator, obj.get("zoom_step") orelse .{ .float = 0.25 }, .{}),
-        .scroll_step = try std.json.innerParseFromValue(f32, allocator, obj.get("scroll_step") orelse .{ .float = 100.0 }, .{}),
+        .size = try std.json.innerParseFromValue(
+            f32,
+            allocator,
+            obj.get("size") orelse .{ .float = 0.90 },
+            .{},
+        ),
+        .zoom_step = try std.json.innerParseFromValue(
+            f32,
+            allocator,
+            obj.get("zoom_step") orelse .{ .float = 0.25 },
+            .{},
+        ),
+        .scroll_step = try std.json.innerParseFromValue(
+            f32,
+            allocator,
+            obj.get("scroll_step") orelse .{ .float = 100.0 },
+            .{},
+        ),
     };
 }
 
 fn parseStatusBar(value: std.json.Value, allocator: std.mem.Allocator) !StatusBar {
     const obj = value.object;
+
     const enabled = try std.json.innerParseFromValue(
         bool,
         allocator,
