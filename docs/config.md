@@ -19,16 +19,16 @@ Configure keys and modifiers for navigation, zoom, and program control. Each bin
 
 ```json
 {
-  "next": { "key": "n" }, // Next page
-  "prev": { "key": "p" }, // Previous page
-  "scroll_up": { "key": "k" }, // Move viewport up
-  "scroll_down": { "key": "j" }, // Move viewport down
-  "scroll_left": { "key": "h" }, // Move viewport left
-  "scroll_right": { "key": "l" }, // Move viewport right
-  "zoom_in": { "key": "i" }, // Increase zoom level
-  "zoom_out": { "key": "o" }, // Decrease zoom level
-  "colorize": { "key": "z" }, // Toggle color inversion
-  "quit": { "key": "c", "modifiers": ["ctrl"] } // Exit program
+  "next": { "key": "n" },                           // Next page
+  "prev": { "key": "p" },                           // Previous page
+  "scroll_up": { "key": "k" },                      // Move viewport up
+  "scroll_down": { "key": "j" },                    // Move viewport down
+  "scroll_left": { "key": "h" },                    // Move viewport left
+  "scroll_right": { "key": "l" },                   // Move viewport right
+  "zoom_in": { "key": "i" },                        // Increase zoom level
+  "zoom_out": { "key": "o" },                       // Decrease zoom level
+  "colorize": { "key": "z" },                       // Toggle color inversion
+  "quit": { "key": "c", "modifiers": ["ctrl"] }     // Exit program
 }
 ```
 
@@ -44,7 +44,7 @@ Controls automatic reloading when PDF file changes. Useful for live previewing:
 Core display and interaction settings:
 
 > [!NOTE]  
-> The PDF viewer uses color inversion for better terminal viewing. By default, it runs in dark mode where white PDF pixels are displayed as black (0x000000) and black pixels as white (0xffffff). You can customize these colors to match your terminal theme - set white to your terminal's background color and black to your desired text.
+> fancy-cat uses color inversion for better terminal viewing. By default, it runs in dark mode where white pixels are displayed as black (0x000000) and black pixels as white (0xffffff). You can customize these colors to match your terminal theme - set white to your terminal's background color and black to your desired text.
 
 - `colorize`: `bool` - Toggle color inversion for dark/light mode
 - `white`: `i32` - Hex color code for white pixels in colorized mode
