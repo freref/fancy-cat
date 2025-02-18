@@ -21,13 +21,13 @@ fancy-cat <path-to-pdf> <optional-page-number>
 
 fancy-cat can be configured through a JSON config file located at `~/.config/fancy-cat/config.json`. The file is automatically created on the first run with default settings.
 
-The default `config.json` can be found [here](./src/config/config.json) and documentation on the configurations can be found [here](./docs/config.md)
+The default `config.json` can be found [here](./src/config/config.json) and documentation on the config options can be found [here](./docs/config.md)
 
 ## Installation
 
 ### Arch Linux
 
-[fancy-cat](https://aur.archlinux.org/packages/fancy-cat) is available as a package in the AUR. You can install it using an AUR helper (e.g., paru):
+fancy-cat is available as a package in the AUR ([link](https://aur.archlinux.org/packages/fancy-cat)). You can install it using an AUR helper (e.g., paru):
 
 ```sh
 paru -S fancy-cat
