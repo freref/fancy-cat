@@ -155,7 +155,8 @@ fn parseKeyMap(value: std.json.Value, allocator: std.mem.Allocator) !KeyMap {
 }
 
 fn parseKeyBinding(value: ?std.json.Value, allocator: std.mem.Allocator) !?KeyBinding {
-    const obj = value.object;
+    const binding = value orelse return null;
+    const obj = binding.object;
 
     const key = try std.json.innerParseFromValue(
         []const u8,
