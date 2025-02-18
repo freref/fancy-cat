@@ -7,7 +7,7 @@ pub const KeyBinding = struct {
     modifiers: vaxis.Key.Modifiers,
 };
 
-// config
+// XXX Lot of redundancy, but I guess thats good?
 pub const KeyMap = struct {
     next: KeyBinding = .{ .key = 'n', .modifiers = .{} },
     prev: KeyBinding = .{ .key = 'p', .modifiers = .{} },
@@ -103,15 +103,45 @@ pub fn init(allocator: std.mem.Allocator) !Self {
 }
 
 fn parseKeyMap(value: std.json.Value, allocator: std.mem.Allocator) !KeyMap {
-    _ = value;
-    _ = allocator;
-    return KeyMap{};
+    const obj = value.object;
+
+    return KeyMap{
+        .next = try parseKeyBinding(obj.get("next"), allocator) orelse .{ .key = 'n', .modifiers = .{} },
+        .prev = try parseKeyBinding(obj.get("prev"), allocator) orelse .{ .key = 'p', .modifiers = .{} },
+        .scroll_up = try parseKeyBinding(obj.get("scroll_up"), allocator) orelse .{ .key = 'k', .modifiers = .{} },
+        .scroll_down = try parseKeyBinding(obj.get("scroll_down"), allocator) orelse .{ .key = 'j', .modifiers = .{} },
+        .scroll_left = try parseKeyBinding(obj.get("scroll_left"), allocator) orelse .{ .key = 'h', .modifiers = .{} },
+        .scroll_right = try parseKeyBinding(obj.get("scroll_right"), allocator) orelse .{ .key = 'l', .modifiers = .{} },
+        .zoom_in = try parseKeyBinding(obj.get("zoom_in"), allocator) orelse .{ .key = 'i', .modifiers = .{} },
+        .zoom_out = try parseKeyBinding(obj.get("zoom_out"), allocator) orelse .{ .key = 'o', .modifiers = .{} },
+        .colorize = try parseKeyBinding(obj.get("colorize"), allocator) orelse .{ .key = 'z', .modifiers = .{} },
+        .quit = try parseKeyBinding(obj.get("quit"), allocator) orelse .{ .key = 'c', .modifiers = .{ .ctrl = true } },
+    };
 }
 
-fn parseKeyBinding(value: std.json.Value, allocator: std.mem.Allocator) !KeyBinding {
-    _ = value;
-    _ = allocator;
-    return KeyBinding{};
+fn parseKeyBinding(value: ?std.json.Value, allocator: std.mem.Allocator) !?KeyBinding {
+    const binding = value orelse return null;
+    const obj = binding.object;
+
+    const key = try std.json.innerParseFromValue([]const u8, allocator, obj.get("key") orelse return null, .{});
+    defer allocator.free(key);
+
+    var modifiers = vaxis.Key.Modifiers{};
+    if (obj.get("modifiers")) |mods| {
+        for (mods.array.items) |mod| {
+            const mod_str = try std.json.innerParseFromValue([]const u8, allocator, mod, .{});
+            defer allocator.free(mod_str);
+
+            if (std.mem.eql(u8, mod_str, "ctrl")) {
+                modifiers.ctrl = true;
+            }
+        }
+    }
+
+    return KeyBinding{
+        .key = key[0],
+        .modifiers = modifiers,
+    };
 }
 
 fn parseFileMonitor(value: std.json.Value, allocator: std.mem.Allocator) !FileMonitor {
@@ -134,43 +164,17 @@ fn parseFileMonitor(value: std.json.Value, allocator: std.mem.Allocator) !FileMo
 
 fn parseGeneral(value: std.json.Value, allocator: std.mem.Allocator) !General {
     const obj = value.object;
+
+    const white = obj.get("white") orelse std.json.Value{ .string = "0x000000" };
+    const black = obj.get("black") orelse std.json.Value{ .string = "0xffffff" };
+
     return General{
-        .colorize = try std.json.innerParseFromValue(
-            bool,
-            allocator,
-            obj.get("colorize") orelse .{ .bool = false },
-            .{},
-        ),
-        .white = try std.json.innerParseFromValue(
-            i32,
-            allocator,
-            obj.get("white") orelse .{ .string = "0x000000" },
-            .{},
-        ),
-        .black = try std.json.innerParseFromValue(
-            i32,
-            allocator,
-            obj.get("black") orelse .{ .string = "0xffffff" },
-            .{},
-        ),
-        .size = try std.json.innerParseFromValue(
-            f32,
-            allocator,
-            obj.get("size") orelse .{ .float = 0.90 },
-            .{},
-        ),
-        .zoom_step = try std.json.innerParseFromValue(
-            f32,
-            allocator,
-            obj.get("zoom_step") orelse .{ .float = 0.25 },
-            .{},
-        ),
-        .scroll_step = try std.json.innerParseFromValue(
-            f32,
-            allocator,
-            obj.get("scroll_step") orelse .{ .float = 100.0 },
-            .{},
-        ),
+        .colorize = try std.json.innerParseFromValue(bool, allocator, obj.get("colorize") orelse .{ .bool = false }, .{}),
+        .white = try std.fmt.parseInt(i32, white.string[2..], 16),
+        .black = try std.fmt.parseInt(i32, black.string[2..], 16),
+        .size = try std.json.innerParseFromValue(f32, allocator, obj.get("size") orelse .{ .float = 0.90 }, .{}),
+        .zoom_step = try std.json.innerParseFromValue(f32, allocator, obj.get("zoom_step") orelse .{ .float = 0.25 }, .{}),
+        .scroll_step = try std.json.innerParseFromValue(f32, allocator, obj.get("scroll_step") orelse .{ .float = 100.0 }, .{}),
     };
 }
 
