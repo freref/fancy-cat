@@ -15,6 +15,10 @@ pub fn init(context: *Context) Self {
     };
 }
 
+pub fn deinit(self: *Self) void {
+    self.command_buffer.deinit();
+}
+
 pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
     // O(n) but n is small
     // Centralized key handling
@@ -49,4 +53,20 @@ pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
     var buf: [4]u8 = undefined;
     const n = std.unicode.utf8Encode(key.codepoint, &buf) catch return;
     try self.command_buffer.appendSlice(buf[0..n]);
+}
+
+pub fn drawCommandBar(self: *Self, win: vaxis.Window) void {
+    const command_bar = win.child(.{
+        .x_off = 0,
+        .y_off = win.height - 1,
+        .width = win.width,
+        .height = 1,
+    });
+    _ = command_bar.print(
+        &.{
+            .{ .text = ":" },
+            .{ .text = self.command_buffer.items },
+        },
+        .{ .col_offset = 0 },
+    );
 }

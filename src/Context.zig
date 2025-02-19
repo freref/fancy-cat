@@ -146,6 +146,11 @@ pub const Context = struct {
     }
 
     pub fn changeState(self: *Self, new_state: StateType) void {
+        switch (self.current_state) {
+            .command => |*state| state.deinit(),
+            .view => {},
+        }
+
         switch (new_state) {
             .view => self.current_state = .{ .view = ViewState.init(self) },
             .command => self.current_state = .{ .command = CommandState.init(self) },
@@ -250,6 +255,8 @@ pub const Context = struct {
             &.{.{ .text = self.page_info_text, .style = self.config.status_bar.style }},
             .{ .col_offset = @intCast(win.width - self.page_info_text.len - 1) },
         );
+
+        if (self.current_state == .command) self.current_state.command.drawCommandBar(win);
     }
 
     pub fn draw(self: *Self) !void {
