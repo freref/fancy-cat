@@ -10,7 +10,7 @@
     "zoom_out": { "key": "o", "modifiers": [] },
     "colorize": { "key": "z", "modifiers": [] },
     "quit": { "key": "c", "modifiers": ["ctrl"] },
-    "enter_command_mode": { "key": ":", "modifiers": [] },
+    "enter_command_mode": { "key": "colon", "modifiers": [] },
     "exit_command_mode": { "key": "escape", "modifiers": [] },
     "execute_command": { "key": "enter", "modifiers": [] }
   },
