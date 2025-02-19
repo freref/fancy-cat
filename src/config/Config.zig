@@ -107,62 +107,25 @@ pub fn init(allocator: std.mem.Allocator) !Self {
 
 fn parseKeyMap(value: std.json.Value, allocator: std.mem.Allocator) !KeyMap {
     const obj = value.object;
+    var keymap = KeyMap{};
 
-    return KeyMap{
-        .next = try parseKeyBinding(obj.get("next"), allocator) orelse .{
-            .codepoint = 'n',
-            .mods = .{},
-        },
-        .prev = try parseKeyBinding(obj.get("prev"), allocator) orelse .{
-            .codepoint = 'p',
-            .mods = .{},
-        },
-        .scroll_up = try parseKeyBinding(obj.get("scroll_up"), allocator) orelse .{
-            .codepoint = 'k',
-            .mods = .{},
-        },
-        .scroll_down = try parseKeyBinding(obj.get("scroll_down"), allocator) orelse .{
-            .codepoint = 'j',
-            .mods = .{},
-        },
-        .scroll_left = try parseKeyBinding(obj.get("scroll_left"), allocator) orelse .{
-            .codepoint = 'h',
-            .mods = .{},
-        },
-        .scroll_right = try parseKeyBinding(obj.get("scroll_right"), allocator) orelse .{
-            .codepoint = 'l',
-            .mods = .{},
-        },
-        .zoom_in = try parseKeyBinding(obj.get("zoom_in"), allocator) orelse .{
-            .codepoint = 'i',
-            .mods = .{},
-        },
-        .zoom_out = try parseKeyBinding(obj.get("zoom_out"), allocator) orelse .{
-            .codepoint = 'o',
-            .mods = .{},
-        },
-        .colorize = try parseKeyBinding(obj.get("colorize"), allocator) orelse .{
-            .codepoint = 'z',
-            .mods = .{},
-        },
-        .quit = try parseKeyBinding(obj.get("quit"), allocator) orelse .{
-            .codepoint = 'c',
-            .mods = .{ .ctrl = true },
-        },
-    };
+    inline for (std.meta.fields(KeyMap)) |field| {
+        const field_name = field.name;
+        if (obj.get(field_name)) |key_value| {
+            @field(keymap, field_name) = try parseKeyBinding(key_value, allocator);
+        }
+    }
+
+    return keymap;
 }
 
-fn parseKeyBinding(value: ?std.json.Value, allocator: std.mem.Allocator) !?vaxis.Key {
-    const binding = value orelse return null;
-    const obj = binding.object;
+fn parseKeyBinding(value: std.json.Value, allocator: std.mem.Allocator) !vaxis.Key {
+    const obj = value.object;
 
-    const key = try std.json.innerParseFromValue(
-        []const u21,
-        allocator,
-        obj.get("key") orelse return null,
-        .{},
-    );
+    const key_value = obj.get("key") orelse return error.MissingKeyField;
+    const key = try std.json.innerParseFromValue([]const u8, allocator, key_value, .{});
     defer allocator.free(key);
+    if (key.len == 0) return error.EmptyKey;
 
     var modifiers = vaxis.Key.Modifiers{};
     if (obj.get("modifiers")) |mods| {
@@ -170,13 +133,15 @@ fn parseKeyBinding(value: ?std.json.Value, allocator: std.mem.Allocator) !?vaxis
             const mod_str = try std.json.innerParseFromValue([]const u8, allocator, mod, .{});
             defer allocator.free(mod_str);
 
-            if (std.mem.eql(u8, mod_str, "ctrl")) modifiers.ctrl = true;
-            // TODO: Add more modifiers
+            if (std.mem.eql(u8, mod_str, "ctrl")) {
+                modifiers.ctrl = true;
+            }
+            // TODO Add more modifiers
         }
     }
 
     return vaxis.Key{
-        .codepoint = key[0],
+        .codepoint = @as(u21, key[0]),
         .mods = modifiers,
     };
 }
