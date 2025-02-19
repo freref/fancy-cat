@@ -28,6 +28,12 @@ pub const State = union(StateType) {
 pub const Context = struct {
     const Self = @This();
 
+    pub const KeyAction = struct {
+        codepoint: u21,
+        mods: vaxis.Key.Modifiers,
+        handler: *const fn (*Context) void,
+    };
+
     allocator: std.mem.Allocator,
     should_quit: bool,
     tty: vaxis.Tty,
@@ -109,6 +115,7 @@ pub const Context = struct {
             .tty = &self.tty,
             .vaxis = &self.vx,
         };
+
         try loop.init();
         try loop.start();
         defer loop.stop();
@@ -138,6 +145,13 @@ pub const Context = struct {
         }
     }
 
+    pub fn changeState(self: *Self, new_state: StateType) void {
+        switch (new_state) {
+            .view => self.current_state = .{ .view = ViewState.init(self) },
+            .command => self.current_state = .{ .command = CommandState.init(self) },
+        }
+    }
+
     pub fn resetCurrentPage(self: *Self) void {
         if (self.current_page) |img| {
             self.vx.freeImage(self.tty.anyWriter(), img.id);
@@ -146,9 +160,17 @@ pub const Context = struct {
     }
 
     pub fn handleKeyStroke(self: *Self, key: vaxis.Key) !void {
+        const km = self.config.key_map;
+
+        // Global keybindings
+        if (key.matches(km.quit.codepoint, km.quit.mods)) {
+            self.should_quit = true;
+            return;
+        }
+
         try switch (self.current_state) {
-            .view => |*state| state.handleKeyStroke(key),
-            .command => |*state| state.handleKeyStroke(key),
+            .view => |*state| state.handleKeyStroke(key, km),
+            .command => |*state| state.handleKeyStroke(key, km),
         };
     }
 

@@ -1,6 +1,8 @@
 const Self = @This();
 const vaxis = @import("vaxis");
 const Context = @import("../Context.zig").Context;
+const CommandState = @import("./CommandState.zig");
+const Config = @import("../config/Config.zig");
 
 context: *Context,
 
@@ -10,24 +12,10 @@ pub fn init(context: *Context) Self {
     };
 }
 
-pub fn handleKeyStroke(self: *Self, key: vaxis.Key) !void {
-    const km = self.context.config.key_map;
-
-    // Handle quit key separately as it doesn't reload
-    if (key.matches(km.quit.codepoint, km.quit.mods)) {
-        self.context.should_quit = true;
-        return;
-    }
-
-    const KeyAction = struct {
-        codepoint: u21,
-        mods: vaxis.Key.Modifiers,
-        handler: *const fn (*Context) void,
-    };
-
+pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
     // O(n) but n is small
     // Centralized key handling
-    const key_actions = &[_]KeyAction{
+    const key_actions = &[_]Context.KeyAction{
         .{
             .codepoint = km.next.codepoint,
             .mods = km.next.mods,
@@ -120,7 +108,7 @@ pub fn handleKeyStroke(self: *Self, key: vaxis.Key) !void {
             .mods = km.enter_command_mode.mods,
             .handler = struct {
                 fn action(s: *Context) void {
-                    _ = s;
+                    s.changeState(.command);
                 }
             }.action,
         },
