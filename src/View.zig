@@ -129,37 +129,125 @@ fn resetCurrentPage(self: *Self) void {
 
 fn handleKeyStroke(self: *Self, key: vaxis.Key) !void {
     const km = self.config.key_map;
-    // non reload keys
+
+    // Handle quit key separately as it doesn't reload
     if (key.matches(km.quit.codepoint, km.quit.mods)) {
         self.should_quit = true;
         return;
     }
 
-    // reload keys
-    if (key.matches(km.next.codepoint, km.next.mods)) {
-        if (self.pdf_handler.changePage(1)) {
-            self.resetCurrentPage();
-            self.pdf_handler.resetZoomAndScroll();
+    const KeyAction = struct {
+        codepoint: u21,
+        mods: vaxis.Key.Modifiers,
+        handler: *const fn (*Self) void,
+    };
+
+    // O(n) but n is small
+    // Centralized key handling
+    const key_actions = &[_]KeyAction{
+        .{
+            .codepoint = km.next.codepoint,
+            .mods = km.next.mods,
+            .handler = struct {
+                fn action(s: *Self) void {
+                    if (s.pdf_handler.changePage(1)) {
+                        s.resetCurrentPage();
+                        s.pdf_handler.resetZoomAndScroll();
+                    }
+                }
+            }.action,
+        },
+        .{
+            .codepoint = km.prev.codepoint,
+            .mods = km.prev.mods,
+            .handler = struct {
+                fn action(s: *Self) void {
+                    if (s.pdf_handler.changePage(-1)) {
+                        s.resetCurrentPage();
+                        s.pdf_handler.resetZoomAndScroll();
+                    }
+                }
+            }.action,
+        },
+        .{
+            .codepoint = km.zoom_in.codepoint,
+            .mods = km.zoom_in.mods,
+            .handler = struct {
+                fn action(s: *Self) void {
+                    s.pdf_handler.adjustZoom(true);
+                }
+            }.action,
+        },
+        .{
+            .codepoint = km.zoom_out.codepoint,
+            .mods = km.zoom_out.mods,
+            .handler = struct {
+                fn action(s: *Self) void {
+                    s.pdf_handler.adjustZoom(false);
+                }
+            }.action,
+        },
+        .{
+            .codepoint = km.scroll_up.codepoint,
+            .mods = km.scroll_up.mods,
+            .handler = struct {
+                fn action(s: *Self) void {
+                    s.pdf_handler.scroll(.Up);
+                }
+            }.action,
+        },
+        .{
+            .codepoint = km.scroll_down.codepoint,
+            .mods = km.scroll_down.mods,
+            .handler = struct {
+                fn action(s: *Self) void {
+                    s.pdf_handler.scroll(.Down);
+                }
+            }.action,
+        },
+        .{
+            .codepoint = km.scroll_left.codepoint,
+            .mods = km.scroll_left.mods,
+            .handler = struct {
+                fn action(s: *Self) void {
+                    s.pdf_handler.scroll(.Left);
+                }
+            }.action,
+        },
+        .{
+            .codepoint = km.scroll_right.codepoint,
+            .mods = km.scroll_right.mods,
+            .handler = struct {
+                fn action(s: *Self) void {
+                    s.pdf_handler.scroll(.Right);
+                }
+            }.action,
+        },
+        .{
+            .codepoint = km.colorize.codepoint,
+            .mods = km.colorize.mods,
+            .handler = struct {
+                fn action(s: *Self) void {
+                    s.pdf_handler.toggleColor();
+                }
+            }.action,
+        },
+        .{
+            .codepoint = km.enter_command_mode.codepoint,
+            .mods = km.enter_command_mode.mods,
+            .handler = struct {
+                fn action(s: *Self) void {
+                    _ = s;
+                }
+            }.action,
+        },
+    };
+
+    for (key_actions) |action| {
+        if (key.matches(action.codepoint, action.mods)) {
+            action.handler(self);
+            break;
         }
-    } else if (key.matches(km.prev.codepoint, km.prev.mods)) {
-        if (self.pdf_handler.changePage(-1)) {
-            self.resetCurrentPage();
-            self.pdf_handler.resetZoomAndScroll();
-        }
-    } else if (key.matches(km.zoom_in.codepoint, km.zoom_in.mods)) {
-        self.pdf_handler.adjustZoom(true);
-    } else if (key.matches(km.zoom_out.codepoint, km.zoom_out.mods)) {
-        self.pdf_handler.adjustZoom(false);
-    } else if (key.matches(km.scroll_up.codepoint, km.scroll_up.mods)) {
-        self.pdf_handler.scroll(.Up);
-    } else if (key.matches(km.scroll_down.codepoint, km.scroll_down.mods)) {
-        self.pdf_handler.scroll(.Down);
-    } else if (key.matches(km.scroll_left.codepoint, km.scroll_left.mods)) {
-        self.pdf_handler.scroll(.Left);
-    } else if (key.matches(km.scroll_right.codepoint, km.scroll_right.mods)) {
-        self.pdf_handler.scroll(.Right);
-    } else if (key.matches(km.colorize.codepoint, km.colorize.mods)) {
-        self.pdf_handler.toggleColor();
     }
 
     self.reload = true;
