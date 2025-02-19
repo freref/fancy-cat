@@ -1,5 +1,5 @@
 const std = @import("std");
-const Context = @import("Context.zig");
+const Context = @import("Context.zig").Context;
 
 pub const FANCY_CAT_VERSION = "0.1.1";
 
