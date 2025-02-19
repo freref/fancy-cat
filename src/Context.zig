@@ -14,6 +14,11 @@ const Event = union(enum) {
     file_changed,
 };
 
+pub const State = enum {
+    view,
+    command,
+};
+
 allocator: std.mem.Allocator,
 should_quit: bool,
 tty: vaxis.Tty,
@@ -26,6 +31,7 @@ watcher: ?fzwatch.Watcher,
 thread: ?std.Thread,
 reload: bool,
 config: Config,
+state: State,
 
 pub fn init(allocator: std.mem.Allocator, args: [][]const u8) !Self {
     const path = args[1];
@@ -58,6 +64,7 @@ pub fn init(allocator: std.mem.Allocator, args: [][]const u8) !Self {
         .thread = null,
         .reload = false,
         .config = config,
+        .state = State.view,
     };
 }
 

@@ -1,5 +1,5 @@
 const std = @import("std");
-const View = @import("View.zig");
+const Context = @import("Context.zig");
 
 pub const FANCY_CAT_VERSION = "0.1.1";
 
@@ -28,7 +28,7 @@ pub fn main() !void {
     }
     const allocator = gpa.allocator();
 
-    var app = try View.init(allocator, args);
+    var app = try Context.init(allocator, args);
     defer app.deinit();
 
     try app.run();
