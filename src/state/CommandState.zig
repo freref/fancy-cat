@@ -42,16 +42,11 @@ pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
     for (key_actions) |action| {
         if (key.matches(action.codepoint, action.mods)) {
             action.handler(self.context);
-            break;
+            return;
         }
     }
 
-    // have to convert codepoint to u8
-    //if (std.ascii.isASCII(@as(u8, @intCast(key.codepoint)))) {
-    //    var writer = self.context.command_buffer.writer();
-    //    try writer.write(key.codepoint);
-    //    self.context.reload = true;
-    //}
-
-    self.context.reload = true;
+    var buf: [4]u8 = undefined;
+    const n = std.unicode.utf8Encode(key.codepoint, &buf) catch return;
+    try self.command_buffer.appendSlice(buf[0..n]);
 }

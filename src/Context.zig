@@ -172,6 +172,8 @@ pub const Context = struct {
             .view => |*state| state.handleKeyStroke(key, km),
             .command => |*state| state.handleKeyStroke(key, km),
         };
+
+        self.reload = true;
     }
 
     pub fn update(self: *Self, event: Event) !void {

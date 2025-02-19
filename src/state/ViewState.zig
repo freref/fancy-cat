@@ -117,9 +117,7 @@ pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
     for (key_actions) |action| {
         if (key.matches(action.codepoint, action.mods)) {
             action.handler(self.context);
-            break;
+            return;
         }
     }
-
-    self.context.reload = true;
 }
