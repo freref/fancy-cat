@@ -4,8 +4,8 @@
     .minimum_zig_version = "0.13.0",
     .dependencies = .{
         .vaxis = .{
-            .url = "git+https://github.com/rockorager/libvaxis#1fd920a7aea1bb040c7c028f4bbf0af2ea58e1d1",
-            .hash = "1220feaa655e14cbb4baf59fe746f09a17fc6949be46ad64dd5044982f4fc1bb57c7",
+            .url = "https://github.com/freref/libvaxis/archive/d0a1808ee3c794b342aa87931c6ea8b9e63b3deb.tar.gz",
+            .hash = "1220f957b4c5ec81c249fe4b0fec9b2259b89db830c0c0e20da11e659489f26ec4df",
         },
         .fzwatch = .{
             .url = "https://github.com/freref/fzwatch/archive/refs/tags/v0.2.0.tar.gz",
