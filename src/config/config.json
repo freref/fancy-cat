@@ -11,7 +11,8 @@
     "colorize": { "key": "z", "modifiers": [] },
     "quit": { "key": "c", "modifiers": ["ctrl"] },
     "enter_command_mode": { "key": ":", "modifiers": [] },
-    "exit_command_mode": { "key": "esc", "modifiers": [] }
+    "exit_command_mode": { "key": "escape", "modifiers": [] },
+    "execute_command": { "key": "enter", "modifiers": [] }
   },
   "FileMonitor": {
     "enabled": true,

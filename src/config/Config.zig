@@ -16,7 +16,8 @@ pub const KeyMap = struct {
     colorize: vaxis.Key = .{ .codepoint = 'z', .mods = .{} },
     quit: vaxis.Key = .{ .codepoint = 'c', .mods = .{ .ctrl = true } },
     enter_command_mode: vaxis.Key = .{ .codepoint = ':', .mods = .{} },
-    exit_command_mode: vaxis.Key = .{ .codepoint = ':', .mods = .{} },
+    exit_command_mode: vaxis.Key = .{ .codepoint = vaxis.Key.escape, .mods = .{} },
+    execute_command: vaxis.Key = .{ .codepoint = vaxis.Key.enter, .mods = .{} },
 };
 
 /// File monitor will be used to watch for changes to files and rerender them
@@ -156,7 +157,7 @@ fn parseKeyBinding(value: ?std.json.Value, allocator: std.mem.Allocator) !?vaxis
     const obj = binding.object;
 
     const key = try std.json.innerParseFromValue(
-        []const u8,
+        []const u21,
         allocator,
         obj.get("key") orelse return null,
         .{},
@@ -169,9 +170,7 @@ fn parseKeyBinding(value: ?std.json.Value, allocator: std.mem.Allocator) !?vaxis
             const mod_str = try std.json.innerParseFromValue([]const u8, allocator, mod, .{});
             defer allocator.free(mod_str);
 
-            if (std.mem.eql(u8, mod_str, "ctrl")) {
-                modifiers.ctrl = true;
-            }
+            if (std.mem.eql(u8, mod_str, "ctrl")) modifiers.ctrl = true;
             // TODO: Add more modifiers
         }
     }
