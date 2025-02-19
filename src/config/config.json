@@ -9,7 +9,9 @@
     "zoom_in": { "key": "i", "modifiers": [] },
     "zoom_out": { "key": "o", "modifiers": [] },
     "colorize": { "key": "z", "modifiers": [] },
-    "quit": { "key": "c", "modifiers": ["ctrl"] }
+    "quit": { "key": "c", "modifiers": ["ctrl"] },
+    "enter_command_mode": { "key": ":", "modifiers": [] },
+    "exit_command_mode": { "key": "esc", "modifiers": [] }
   },
   "FileMonitor": {
     "enabled": true,

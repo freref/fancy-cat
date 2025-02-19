@@ -130,35 +130,35 @@ fn resetCurrentPage(self: *Self) void {
 fn handleKeyStroke(self: *Self, key: vaxis.Key) !void {
     const km = self.config.key_map;
     // non reload keys
-    if (key.matches(km.quit.key, km.quit.modifiers)) {
+    if (key.matches(km.quit.codepoint, km.quit.mods)) {
         self.should_quit = true;
         return;
     }
 
     // reload keys
-    if (key.matches(km.next.key, km.next.modifiers)) {
+    if (key.matches(km.next.codepoint, km.next.mods)) {
         if (self.pdf_handler.changePage(1)) {
             self.resetCurrentPage();
             self.pdf_handler.resetZoomAndScroll();
         }
-    } else if (key.matches(km.prev.key, km.prev.modifiers)) {
+    } else if (key.matches(km.prev.codepoint, km.prev.mods)) {
         if (self.pdf_handler.changePage(-1)) {
             self.resetCurrentPage();
             self.pdf_handler.resetZoomAndScroll();
         }
-    } else if (key.matches(km.zoom_in.key, km.zoom_in.modifiers)) {
+    } else if (key.matches(km.zoom_in.codepoint, km.zoom_in.mods)) {
         self.pdf_handler.adjustZoom(true);
-    } else if (key.matches(km.zoom_out.key, km.zoom_out.modifiers)) {
+    } else if (key.matches(km.zoom_out.codepoint, km.zoom_out.mods)) {
         self.pdf_handler.adjustZoom(false);
-    } else if (key.matches(km.scroll_up.key, km.scroll_up.modifiers)) {
+    } else if (key.matches(km.scroll_up.codepoint, km.scroll_up.mods)) {
         self.pdf_handler.scroll(.Up);
-    } else if (key.matches(km.scroll_down.key, km.scroll_down.modifiers)) {
+    } else if (key.matches(km.scroll_down.codepoint, km.scroll_down.mods)) {
         self.pdf_handler.scroll(.Down);
-    } else if (key.matches(km.scroll_left.key, km.scroll_left.modifiers)) {
+    } else if (key.matches(km.scroll_left.codepoint, km.scroll_left.mods)) {
         self.pdf_handler.scroll(.Left);
-    } else if (key.matches(km.scroll_right.key, km.scroll_right.modifiers)) {
+    } else if (key.matches(km.scroll_right.codepoint, km.scroll_right.mods)) {
         self.pdf_handler.scroll(.Right);
-    } else if (key.matches(km.colorize.key, km.colorize.modifiers)) {
+    } else if (key.matches(km.colorize.codepoint, km.colorize.mods)) {
         self.pdf_handler.toggleColor();
     }
 
