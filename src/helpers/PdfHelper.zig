@@ -2,7 +2,7 @@ const Self = @This();
 const std = @import("std");
 const fastb64z = @import("fastb64z");
 const vaxis = @import("vaxis");
-const Config = @import("config/Config.zig");
+const Config = @import("../config/Config.zig");
 const c = @cImport({
     @cInclude("mupdf/fitz.h");
     @cInclude("mupdf/pdf.h");

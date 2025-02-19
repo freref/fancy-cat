@@ -3,7 +3,7 @@ const std = @import("std");
 const vaxis = @import("vaxis");
 const fzwatch = @import("fzwatch");
 const Config = @import("config/Config.zig");
-const PdfHandler = @import("PdfHandler.zig");
+const PdfHelper = @import("./helpers/PdfHelper.zig");
 
 pub const panic = vaxis.panic_handler;
 
@@ -24,7 +24,7 @@ should_quit: bool,
 tty: vaxis.Tty,
 vx: vaxis.Vaxis,
 mouse: ?vaxis.Mouse,
-pdf_handler: PdfHandler,
+pdf_helper: PdfHelper,
 page_info_text: []u8,
 current_page: ?vaxis.Image,
 watcher: ?fzwatch.Watcher,
@@ -42,8 +42,8 @@ pub fn init(allocator: std.mem.Allocator, args: [][]const u8) !Self {
 
     const config = try Config.init(allocator);
 
-    var pdf_handler = try PdfHandler.init(allocator, path, initial_page, config);
-    errdefer pdf_handler.deinit();
+    var pdf_helper = try PdfHelper.init(allocator, path, initial_page, config);
+    errdefer pdf_helper.deinit();
 
     var watcher: ?fzwatch.Watcher = null;
     if (config.file_monitor.enabled) {
@@ -56,7 +56,7 @@ pub fn init(allocator: std.mem.Allocator, args: [][]const u8) !Self {
         .should_quit = false,
         .tty = try vaxis.Tty.init(),
         .vx = try vaxis.init(allocator, .{}),
-        .pdf_handler = pdf_handler,
+        .pdf_helper = pdf_helper,
         .page_info_text = &[_]u8{},
         .current_page = null,
         .watcher = watcher,
@@ -75,7 +75,7 @@ pub fn deinit(self: *Self) void {
         w.deinit();
     }
     if (self.page_info_text.len > 0) self.allocator.free(self.page_info_text);
-    self.pdf_handler.deinit();
+    self.pdf_helper.deinit();
     self.vx.deinit(self.allocator, self.tty.anyWriter());
     self.tty.deinit();
 }
@@ -157,9 +157,9 @@ fn handleKeyStroke(self: *Self, key: vaxis.Key) !void {
             .mods = km.next.mods,
             .handler = struct {
                 fn action(s: *Self) void {
-                    if (s.pdf_handler.changePage(1)) {
+                    if (s.pdf_helper.changePage(1)) {
                         s.resetCurrentPage();
-                        s.pdf_handler.resetZoomAndScroll();
+                        s.pdf_helper.resetZoomAndScroll();
                     }
                 }
             }.action,
@@ -169,9 +169,9 @@ fn handleKeyStroke(self: *Self, key: vaxis.Key) !void {
             .mods = km.prev.mods,
             .handler = struct {
                 fn action(s: *Self) void {
-                    if (s.pdf_handler.changePage(-1)) {
+                    if (s.pdf_helper.changePage(-1)) {
                         s.resetCurrentPage();
-                        s.pdf_handler.resetZoomAndScroll();
+                        s.pdf_helper.resetZoomAndScroll();
                     }
                 }
             }.action,
@@ -181,7 +181,7 @@ fn handleKeyStroke(self: *Self, key: vaxis.Key) !void {
             .mods = km.zoom_in.mods,
             .handler = struct {
                 fn action(s: *Self) void {
-                    s.pdf_handler.adjustZoom(true);
+                    s.pdf_helper.adjustZoom(true);
                 }
             }.action,
         },
@@ -190,7 +190,7 @@ fn handleKeyStroke(self: *Self, key: vaxis.Key) !void {
             .mods = km.zoom_out.mods,
             .handler = struct {
                 fn action(s: *Self) void {
-                    s.pdf_handler.adjustZoom(false);
+                    s.pdf_helper.adjustZoom(false);
                 }
             }.action,
         },
@@ -199,7 +199,7 @@ fn handleKeyStroke(self: *Self, key: vaxis.Key) !void {
             .mods = km.scroll_up.mods,
             .handler = struct {
                 fn action(s: *Self) void {
-                    s.pdf_handler.scroll(.Up);
+                    s.pdf_helper.scroll(.Up);
                 }
             }.action,
         },
@@ -208,7 +208,7 @@ fn handleKeyStroke(self: *Self, key: vaxis.Key) !void {
             .mods = km.scroll_down.mods,
             .handler = struct {
                 fn action(s: *Self) void {
-                    s.pdf_handler.scroll(.Down);
+                    s.pdf_helper.scroll(.Down);
                 }
             }.action,
         },
@@ -217,7 +217,7 @@ fn handleKeyStroke(self: *Self, key: vaxis.Key) !void {
             .mods = km.scroll_left.mods,
             .handler = struct {
                 fn action(s: *Self) void {
-                    s.pdf_handler.scroll(.Left);
+                    s.pdf_helper.scroll(.Left);
                 }
             }.action,
         },
@@ -226,7 +226,7 @@ fn handleKeyStroke(self: *Self, key: vaxis.Key) !void {
             .mods = km.scroll_right.mods,
             .handler = struct {
                 fn action(s: *Self) void {
-                    s.pdf_handler.scroll(.Right);
+                    s.pdf_helper.scroll(.Right);
                 }
             }.action,
         },
@@ -235,7 +235,7 @@ fn handleKeyStroke(self: *Self, key: vaxis.Key) !void {
             .mods = km.colorize.mods,
             .handler = struct {
                 fn action(s: *Self) void {
-                    s.pdf_handler.toggleColor();
+                    s.pdf_helper.toggleColor();
                 }
             }.action,
         },
@@ -266,21 +266,21 @@ pub fn update(self: *Self, event: Event) !void {
         .mouse => |mouse| self.mouse = mouse,
         .winsize => |ws| {
             try self.vx.resize(self.allocator, self.tty.anyWriter(), ws);
-            self.pdf_handler.resetZoomAndScroll();
+            self.pdf_helper.resetZoomAndScroll();
             self.reload = true;
         },
         .file_changed => {
-            try self.pdf_handler.reloadDocument();
+            try self.pdf_helper.reloadDocument();
             self.reload = true;
         },
     }
 }
 
 pub fn drawCurrentPage(self: *Self, win: vaxis.Window) !void {
-    self.pdf_handler.commitReload();
+    self.pdf_helper.commitReload();
     if (self.current_page == null or self.reload) {
         const winsize = try vaxis.Tty.getWinsize(self.tty.fd);
-        const encoded_image = try self.pdf_handler.renderPage(
+        const encoded_image = try self.pdf_helper.renderPage(
             self.allocator,
             winsize.x_pixel,
             winsize.y_pixel,
@@ -316,7 +316,7 @@ pub fn drawStatusBar(self: *Self, win: vaxis.Window) !void {
     status_bar.fill(vaxis.Cell{ .style = self.config.status_bar.style });
 
     _ = status_bar.print(
-        &.{.{ .text = self.pdf_handler.path, .style = self.config.status_bar.style }},
+        &.{.{ .text = self.pdf_helper.path, .style = self.config.status_bar.style }},
         .{ .col_offset = 1 },
     );
 
@@ -327,7 +327,7 @@ pub fn drawStatusBar(self: *Self, win: vaxis.Window) !void {
     self.page_info_text = try std.fmt.allocPrint(
         self.allocator,
         "{d}:{d}",
-        .{ self.pdf_handler.current_page_number + 1, self.pdf_handler.total_pages },
+        .{ self.pdf_helper.current_page_number + 1, self.pdf_helper.total_pages },
     );
 
     _ = status_bar.print(
