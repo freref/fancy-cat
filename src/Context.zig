@@ -84,6 +84,10 @@ pub const Context = struct {
     }
 
     pub fn deinit(self: *Self) void {
+        switch (self.current_state) {
+            .command => |*state| state.deinit(),
+            .view => {},
+        }
         if (self.watcher) |*w| {
             w.stop();
             if (self.thread) |thread| thread.join();
