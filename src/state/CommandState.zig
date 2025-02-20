@@ -36,6 +36,7 @@ pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
         return;
     }
 
+    // TODO clean this up
     if (key.shifted_codepoint) |shifted| {
         if (key.mods.shift and shifted < 128) {
             var buf: [4]u8 = undefined;
