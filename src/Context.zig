@@ -272,4 +272,14 @@ pub const Context = struct {
             try self.drawStatusBar(win);
         }
     }
+
+    pub fn executeCommand(self: *Self, cmd: []u8) bool {
+        const cmd_str = std.mem.trim(u8, cmd, " ");
+        if (std.fmt.parseInt(u16, cmd_str, 10)) |page_num| {
+            self.pdf_helper.goToPage(page_num);
+            return true;
+        } else |_| {
+            return false;
+        }
+    }
 };

@@ -20,34 +20,20 @@ pub fn deinit(self: *Self) void {
 }
 
 pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
-    // O(n) but n is small
-    // Centralized key handling
-    const key_actions = &[_]Context.KeyAction{
-        .{
-            .codepoint = km.exit_command_mode.codepoint,
-            .mods = km.exit_command_mode.mods,
-            .handler = struct {
-                fn action(s: *Context) void {
-                    s.changeState(.view);
-                }
-            }.action,
-        },
-        .{
-            .codepoint = km.enter_command_mode.codepoint,
-            .mods = km.enter_command_mode.mods,
-            .handler = struct {
-                fn action(s: *Context) void {
-                    s.changeState(.view);
-                }
-            }.action,
-        },
-    };
+    if (key.matches(km.exit_command_mode.codepoint, km.exit_command_mode.mods)) {
+        self.context.changeState(.view);
+        return;
+    }
 
-    for (key_actions) |action| {
-        if (key.matches(action.codepoint, action.mods)) {
-            action.handler(self.context);
-            return;
-        }
+    if (key.matches(km.execute_command.codepoint, km.execute_command.mods)) {
+        _ = self.context.executeCommand(self.command_buffer.items);
+        self.context.changeState(.view);
+        return;
+    }
+
+    if (key.matches(vaxis.Key.backspace, .{})) {
+        if (self.command_buffer.items.len > 0) _ = self.command_buffer.pop();
+        return;
     }
 
     var buf: [4]u8 = undefined;
