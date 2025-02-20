@@ -268,7 +268,7 @@ pub fn resetZoomAndScroll(self: *Self) void {
 }
 
 pub fn goToPage(self: *Self, pageNum: u16) void {
-    if (pageNum >= 0 and pageNum <= self.total_pages) {
-        self.current_page_number = @as(u16, @intCast(pageNum));
+    if (pageNum >= 1 and pageNum <= self.total_pages) {
+        self.current_page_number = @as(u16, @intCast(pageNum)) - 1;
     }
 }

@@ -36,9 +36,19 @@ pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
         return;
     }
 
-    var buf: [4]u8 = undefined;
-    const n = std.unicode.utf8Encode(key.codepoint, &buf) catch return;
-    try self.command_buffer.appendSlice(buf[0..n]);
+    if (key.shifted_codepoint) |shifted| {
+        if (key.mods.shift and shifted < 128) {
+            var buf: [4]u8 = undefined;
+            const n = std.unicode.utf8Encode(shifted, &buf) catch return;
+            try self.command_buffer.appendSlice(buf[0..n]);
+            return;
+        }
+    }
+    if (key.codepoint < 128) {
+        var buf: [4]u8 = undefined;
+        const n = std.unicode.utf8Encode(key.codepoint, &buf) catch return;
+        try self.command_buffer.appendSlice(buf[0..n]);
+    }
 }
 
 pub fn drawCommandBar(self: *Self, win: vaxis.Window) void {
