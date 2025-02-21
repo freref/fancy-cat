@@ -203,10 +203,17 @@ pub const Context = struct {
         self.pdf_helper.commitReload();
         if (self.current_page == null or self.reload_page) {
             const winsize = try vaxis.Tty.getWinsize(self.tty.fd);
+            const pix_per_col = try std.math.divCeil(u16, win.screen.width_pix, win.screen.width);
+            const pix_per_row = try std.math.divCeil(u16, win.screen.height_pix, win.screen.height);
+            const x_pix = winsize.cols * pix_per_col;
+            var y_pix = winsize.rows * pix_per_row;
+            if (self.config.status_bar.enabled) {
+                y_pix -|= 2 * pix_per_row;
+            }
             const encoded_image = try self.pdf_helper.renderPage(
                 self.allocator,
-                winsize.x_pixel,
-                winsize.y_pixel,
+                x_pix,
+                y_pix,
             );
             defer self.allocator.free(encoded_image.base64);
 
@@ -223,7 +230,17 @@ pub const Context = struct {
 
         if (self.current_page) |img| {
             const dims = try img.cellSize(win);
-            const center = vaxis.widgets.alignment.center(win, dims.cols, dims.rows);
+            const x_off = (win.width - dims.cols) / 2;
+            var y_off = (win.height - dims.rows) / 2;
+            if (self.config.status_bar.enabled) {
+                y_off -|= 1; // room for status bar
+            }
+            const center = win.child(.{
+                .x_off = x_off,
+                .y_off = y_off,
+                .width = dims.cols,
+                .height = dims.rows,
+            });
             try img.draw(center, .{ .scale = .contain });
         }
     }
@@ -231,7 +248,7 @@ pub const Context = struct {
     pub fn drawStatusBar(self: *Self, win: vaxis.Window) !void {
         const status_bar = win.child(.{
             .x_off = 0,
-            .y_off = win.height - 2,
+            .y_off = win.height -| 2,
             .width = win.width,
             .height = 1,
         });
@@ -255,7 +272,7 @@ pub const Context = struct {
 
         _ = status_bar.print(
             &.{.{ .text = self.page_info_text, .style = self.config.status_bar.style }},
-            .{ .col_offset = @intCast(win.width - self.page_info_text.len - 1) },
+            .{ .col_offset = @intCast(win.width -| self.page_info_text.len -| 1) },
         );
     }
 
