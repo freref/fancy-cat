@@ -103,6 +103,7 @@ pub fn renderPage(
     window_width: u32,
     window_height: u32,
 ) !EncodedImage {
+    _ = allocator;
     const page = c.fz_load_page(self.ctx, self.doc, self.current_page_number);
     defer c.fz_drop_page(self.ctx, page);
     const bound = c.fz_bound_page(self.ctx, page);
@@ -149,31 +150,20 @@ pub fn renderPage(
         c.fz_tint_pixmap(self.ctx, pix, self.config.general.black, self.config.general.white);
     }
 
-    const width = bbox.x1;
-    const height = bbox.y1;
+    const width = @as(usize, @intCast(@abs(bbox.x1)));
+    const height = @as(usize, @intCast(@abs(bbox.y1)));
     const samples = c.fz_pixmap_samples(self.ctx, pix);
 
-    var img = try vaxis.zigimg.Image.fromRawPixels(
-        allocator,
-        @intCast(width),
-        @intCast(height),
-        samples[0..@intCast(width * height * 3)],
-        .rgb24,
-    );
-    defer img.deinit();
-
-    try img.convert(.rgb24);
-    const buf = img.rawBytes();
-
     const base64Encoder = fastb64z.standard.Encoder;
-    const b64_buf = try self.allocator.alloc(u8, base64Encoder.calcSize(buf.len));
+    const sample_count = width * height * 3;
 
-    const encoded = base64Encoder.encode(b64_buf, buf);
+    const b64_buf = try self.allocator.alloc(u8, base64Encoder.calcSize(sample_count));
+    const encoded = base64Encoder.encode(b64_buf, samples[0..sample_count]);
 
     return .{
         .base64 = encoded,
-        .width = @intCast(img.width),
-        .height = @intCast(img.height),
+        .width = @intCast(width),
+        .height = @intCast(height),
     };
 }
 
