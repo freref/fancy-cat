@@ -8,24 +8,9 @@ const c = @cImport({
     @cInclude("mupdf/pdf.h");
 });
 
-pub const PdfError = error{
-    FailedToCreateContext,
-    FailedToOpenDocument,
-    InvalidPageNumber,
-};
-
-pub const ScrollDirection = enum {
-    Up,
-    Down,
-    Left,
-    Right,
-};
-
-pub const EncodedImage = struct {
-    base64: []const u8,
-    width: u16,
-    height: u16,
-};
+pub const PdfError = error{ FailedToCreateContext, FailedToOpenDocument, InvalidPageNumber };
+pub const ScrollDirection = enum { Up, Down, Left, Right };
+pub const EncodedImage = struct { base64: []const u8, width: u16, height: u16 };
 
 allocator: std.mem.Allocator,
 ctx: [*c]c.fz_context,
@@ -162,8 +147,6 @@ pub fn renderPage(
 
     if (self.config.general.colorize) {
         c.fz_tint_pixmap(self.ctx, pix, self.config.general.black, self.config.general.white);
-    } else {
-        c.fz_tint_pixmap(self.ctx, pix, 0x000000, 0xffffff);
     }
 
     const width = bbox.x1;
