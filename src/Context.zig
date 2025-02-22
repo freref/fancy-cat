@@ -15,24 +15,11 @@ const Event = union(enum) {
     file_changed,
 };
 
-pub const StateType = enum {
-    view,
-    command,
-};
-
-pub const State = union(StateType) {
-    view: ViewState,
-    command: CommandState,
-};
+pub const StateType = enum { view, command };
+pub const State = union(StateType) { view: ViewState, command: CommandState };
 
 pub const Context = struct {
     const Self = @This();
-
-    pub const KeyAction = struct {
-        codepoint: u21,
-        mods: vaxis.Key.Modifiers,
-        handler: *const fn (*Context) void,
-    };
 
     allocator: std.mem.Allocator,
     should_quit: bool,

@@ -49,6 +49,7 @@ Controls automatic reloading when PDF file changes. Useful for live previewing:
 - `black`: `i32` - Hex color code for black pixels in colorized mode
 - `size`: `f32` - PDF size relative to screen (0.0-1.0)
 - `zoom_step`: `f32` - How much to zoom in/out per keystroke
+- `zoom_min`: `f32` - Maximum zoom out level
 - `scroll_step`: `f32` - Pixels to move per scroll command
 
 ## StatusBar

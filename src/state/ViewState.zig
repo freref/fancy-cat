@@ -6,6 +6,12 @@ const Config = @import("../config/Config.zig");
 
 context: *Context,
 
+pub const KeyAction = struct {
+    codepoint: u21,
+    mods: vaxis.Key.Modifiers,
+    handler: *const fn (*Context) void,
+};
+
 pub fn init(context: *Context) Self {
     return .{
         .context = context,
@@ -15,7 +21,7 @@ pub fn init(context: *Context) Self {
 pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
     // O(n) but n is small
     // Centralized key handling
-    const key_actions = &[_]Context.KeyAction{
+    const key_actions = &[_]KeyAction{
         .{
             .codepoint = km.next.codepoint,
             .mods = km.next.mods,
