@@ -2,7 +2,8 @@ const Self = @This();
 const std = @import("std");
 const fastb64z = @import("fastb64z");
 const vaxis = @import("vaxis");
-const Config = @import("../config/Config.zig");
+const Config = @import("./config/Config.zig");
+const Cache = @import("./Cache.zig");
 const c = @cImport({
     @cInclude("mupdf/fitz.h");
     @cInclude("mupdf/pdf.h");
@@ -10,7 +11,6 @@ const c = @cImport({
 
 pub const PdfError = error{ FailedToCreateContext, FailedToOpenDocument, InvalidPageNumber };
 pub const ScrollDirection = enum { Up, Down, Left, Right };
-pub const EncodedImage = struct { base64: []const u8, width: u16, height: u16 };
 
 allocator: std.mem.Allocator,
 ctx: [*c]c.fz_context,
@@ -25,6 +25,7 @@ x_offset: f32,
 y_center: f32,
 x_center: f32,
 config: Config,
+cache: Cache,
 
 pub fn init(allocator: std.mem.Allocator, path: []const u8, initial_page: ?u16, config: Config) !Self {
     const ctx = c.fz_new_context(null, null, c.FZ_STORE_UNLIMITED) orelse {
@@ -66,10 +67,12 @@ pub fn init(allocator: std.mem.Allocator, path: []const u8, initial_page: ?u16, 
         .y_center = 0,
         .x_center = 0,
         .config = config,
+        .cache = Cache.init(allocator),
     };
 }
 
 pub fn deinit(self: *Self) void {
+    self.cache.deinit();
     if (self.temp_doc) |doc| c.fz_drop_document(self.ctx, doc);
     c.fz_drop_document(self.ctx, self.doc);
     c.fz_drop_context(self.ctx);
@@ -99,7 +102,11 @@ pub fn renderPage(
     self: *Self,
     window_width: u32,
     window_height: u32,
-) !EncodedImage {
+) !Cache.EncodedImage {
+    if (self.cache.get(self.current_page_number)) |cached| {
+        return cached;
+    }
+
     const page = c.fz_load_page(self.ctx, self.doc, self.current_page_number);
     defer c.fz_drop_page(self.ctx, page);
     const bound = c.fz_bound_page(self.ctx, page);
@@ -160,7 +167,13 @@ pub fn renderPage(
     const b64_buf = try self.allocator.alloc(u8, base64Encoder.calcSize(sample_count));
     const encoded = base64Encoder.encode(b64_buf, samples[0..sample_count]);
 
-    return .{
+    try self.cache.put(self.current_page_number, .{
+        .base64 = encoded,
+        .width = @intCast(width),
+        .height = @intCast(height),
+    });
+
+    return Cache.EncodedImage{
         .base64 = encoded,
         .width = @intCast(width),
         .height = @intCast(height),

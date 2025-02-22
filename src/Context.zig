@@ -1,10 +1,10 @@
 const std = @import("std");
 const vaxis = @import("vaxis");
-const ViewState = @import("state/ViewState.zig");
-const CommandState = @import("state/CommandState.zig");
+const ViewState = @import("states/ViewState.zig");
+const CommandState = @import("states/CommandState.zig");
 const fzwatch = @import("fzwatch");
 const Config = @import("config/Config.zig");
-const PdfHelper = @import("./helpers/PdfHelper.zig");
+const PdfHandler = @import("./PdfHandler.zig");
 
 pub const panic = vaxis.panic_handler;
 
@@ -26,7 +26,7 @@ pub const Context = struct {
     tty: vaxis.Tty,
     vx: vaxis.Vaxis,
     mouse: ?vaxis.Mouse,
-    pdf_helper: PdfHelper,
+    pdf_helper: PdfHandler,
     page_info_text: []u8,
     current_page: ?vaxis.Image,
     watcher: ?fzwatch.Watcher,
@@ -44,7 +44,7 @@ pub const Context = struct {
 
         const config = try Config.init(allocator);
 
-        var pdf_helper = try PdfHelper.init(allocator, path, initial_page, config);
+        var pdf_helper = try PdfHandler.init(allocator, path, initial_page, config);
         errdefer pdf_helper.deinit();
 
         var watcher: ?fzwatch.Watcher = null;
@@ -198,7 +198,6 @@ pub const Context = struct {
                 y_pix -|= 2 * pix_per_row;
             }
             const encoded_image = try self.pdf_helper.renderPage(x_pix, y_pix);
-            defer self.allocator.free(encoded_image.base64);
 
             self.current_page = try self.vx.transmitPreEncodedImage(
                 self.tty.anyWriter(),
