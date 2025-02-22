@@ -97,11 +97,9 @@ pub fn commitReload(self: *Self) void {
 
 pub fn renderPage(
     self: *Self,
-    allocator: std.mem.Allocator,
     window_width: u32,
     window_height: u32,
 ) !EncodedImage {
-    _ = allocator;
     const page = c.fz_load_page(self.ctx, self.doc, self.current_page_number);
     defer c.fz_drop_page(self.ctx, page);
     const bound = c.fz_bound_page(self.ctx, page);

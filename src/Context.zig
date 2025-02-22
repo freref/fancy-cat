@@ -197,11 +197,7 @@ pub const Context = struct {
             if (self.config.status_bar.enabled) {
                 y_pix -|= 2 * pix_per_row;
             }
-            const encoded_image = try self.pdf_helper.renderPage(
-                self.allocator,
-                x_pix,
-                y_pix,
-            );
+            const encoded_image = try self.pdf_helper.renderPage(x_pix, y_pix);
             defer self.allocator.free(encoded_image.base64);
 
             self.current_page = try self.vx.transmitPreEncodedImage(
