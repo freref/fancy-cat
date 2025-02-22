@@ -26,11 +26,13 @@ y_center: f32,
 x_center: f32,
 config: Config,
 cache: Cache,
+check_cache: bool,
 
 pub fn init(
     allocator: std.mem.Allocator,
     path: []const u8,
     initial_page: ?u16,
+    // TODO pass pointer?
     config: Config,
 ) !Self {
     const ctx = c.fz_new_context(null, null, c.FZ_STORE_UNLIMITED) orelse {
@@ -72,7 +74,8 @@ pub fn init(
         .y_center = 0,
         .x_center = 0,
         .config = config,
-        .cache = Cache.init(allocator),
+        .cache = Cache.init(allocator, config),
+        .check_cache = true,
     };
 }
 
@@ -108,8 +111,11 @@ pub fn renderPage(
     window_width: u32,
     window_height: u32,
 ) !Cache.EncodedImage {
-    if (self.config.cache.enabled) {
-        if (self.cache.get(self.current_page_number)) |cached| return cached;
+    if (self.config.cache.enabled and self.zoom == 0 and self.x_offset == 0 and self.y_offset == 0 and self.check_cache) {
+        if (self.cache.get(self.current_page_number)) |cached| {
+            self.check_cache = false;
+            return cached;
+        }
     }
 
     const page = c.fz_load_page(self.ctx, self.doc, self.current_page_number);
@@ -172,11 +178,13 @@ pub fn renderPage(
     const b64_buf = try self.allocator.alloc(u8, base64Encoder.calcSize(sample_count));
     const encoded = base64Encoder.encode(b64_buf, samples[0..sample_count]);
 
+    var cached = false;
     if (self.config.cache.enabled) {
-        try self.cache.put(self.current_page_number, .{
+        cached = try self.cache.put(self.current_page_number, .{
             .base64 = encoded,
             .width = @intCast(width),
             .height = @intCast(height),
+            .cached = true,
         });
     }
 
@@ -184,6 +192,7 @@ pub fn renderPage(
         .base64 = encoded,
         .width = @intCast(width),
         .height = @intCast(height),
+        .cached = cached,
     };
 }
 

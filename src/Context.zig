@@ -26,7 +26,7 @@ pub const Context = struct {
     tty: vaxis.Tty,
     vx: vaxis.Vaxis,
     mouse: ?vaxis.Mouse,
-    pdf_helper: PdfHandler,
+    pdf_handler: PdfHandler,
     page_info_text: []u8,
     current_page: ?vaxis.Image,
     watcher: ?fzwatch.Watcher,
@@ -44,8 +44,8 @@ pub const Context = struct {
 
         const config = try Config.init(allocator);
 
-        var pdf_helper = try PdfHandler.init(allocator, path, initial_page, config);
-        errdefer pdf_helper.deinit();
+        var pdf_handler = try PdfHandler.init(allocator, path, initial_page, config);
+        errdefer pdf_handler.deinit();
 
         var watcher: ?fzwatch.Watcher = null;
         if (config.file_monitor.enabled) {
@@ -58,7 +58,7 @@ pub const Context = struct {
             .should_quit = false,
             .tty = try vaxis.Tty.init(),
             .vx = try vaxis.init(allocator, .{}),
-            .pdf_helper = pdf_helper,
+            .pdf_handler = pdf_handler,
             .page_info_text = &[_]u8{},
             .current_page = null,
             .watcher = watcher,
@@ -81,7 +81,7 @@ pub const Context = struct {
             w.deinit();
         }
         if (self.page_info_text.len > 0) self.allocator.free(self.page_info_text);
-        self.pdf_helper.deinit();
+        self.pdf_handler.deinit();
         self.vx.deinit(self.allocator, self.tty.anyWriter());
         self.tty.deinit();
     }
@@ -152,6 +152,8 @@ pub const Context = struct {
         if (self.current_page) |img| {
             self.vx.freeImage(self.tty.anyWriter(), img.id);
             self.current_page = null;
+            self.pdf_handler.resetZoomAndScroll();
+            self.pdf_handler.check_cache = true;
         }
     }
 
@@ -176,18 +178,18 @@ pub const Context = struct {
             .mouse => |mouse| self.mouse = mouse,
             .winsize => |ws| {
                 try self.vx.resize(self.allocator, self.tty.anyWriter(), ws);
-                self.pdf_helper.resetZoomAndScroll();
+                self.pdf_handler.resetZoomAndScroll();
                 self.reload_page = true;
             },
             .file_changed => {
-                try self.pdf_helper.reloadDocument();
+                try self.pdf_handler.reloadDocument();
                 self.reload_page = true;
             },
         }
     }
 
     pub fn drawCurrentPage(self: *Self, win: vaxis.Window) !void {
-        self.pdf_helper.commitReload();
+        self.pdf_handler.commitReload();
         if (self.current_page == null or self.reload_page) {
             const winsize = try vaxis.Tty.getWinsize(self.tty.fd);
             const pix_per_col = try std.math.divCeil(u16, win.screen.width_pix, win.screen.width);
@@ -197,7 +199,9 @@ pub const Context = struct {
             if (self.config.status_bar.enabled) {
                 y_pix -|= 2 * pix_per_row;
             }
-            const encoded_image = try self.pdf_helper.renderPage(x_pix, y_pix);
+
+            const encoded_image = try self.pdf_handler.renderPage(x_pix, y_pix);
+            defer if (!encoded_image.cached) self.allocator.free(encoded_image.base64);
 
             self.current_page = try self.vx.transmitPreEncodedImage(
                 self.tty.anyWriter(),
@@ -238,7 +242,7 @@ pub const Context = struct {
         status_bar.fill(vaxis.Cell{ .style = self.config.status_bar.style });
 
         _ = status_bar.print(
-            &.{.{ .text = self.pdf_helper.path, .style = self.config.status_bar.style }},
+            &.{.{ .text = self.pdf_handler.path, .style = self.config.status_bar.style }},
             .{ .col_offset = 1 },
         );
 
@@ -249,7 +253,7 @@ pub const Context = struct {
         self.page_info_text = try std.fmt.allocPrint(
             self.allocator,
             "{d}:{d}",
-            .{ self.pdf_helper.current_page_number + 1, self.pdf_helper.total_pages },
+            .{ self.pdf_handler.current_page_number + 1, self.pdf_handler.total_pages },
         );
 
         _ = status_bar.print(

@@ -86,10 +86,9 @@ pub fn executeCommand(self: *Self, cmd: []u8) bool {
     }
 
     if (std.fmt.parseInt(u16, cmd_str, 10)) |page_num| {
-        const success = self.context.pdf_helper.goToPage(page_num);
+        const success = self.context.pdf_handler.goToPage(page_num);
         if (success) {
             self.context.resetCurrentPage();
-            self.context.pdf_helper.resetZoomAndScroll();
             self.context.reload_page = true;
         }
         return true;

@@ -27,9 +27,8 @@ pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
             .mods = km.next.mods,
             .handler = struct {
                 fn action(s: *Context) void {
-                    if (s.pdf_helper.changePage(1)) {
+                    if (s.pdf_handler.changePage(1)) {
                         s.resetCurrentPage();
-                        s.pdf_helper.resetZoomAndScroll();
                     }
                     s.reload_page = true;
                 }
@@ -40,9 +39,8 @@ pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
             .mods = km.prev.mods,
             .handler = struct {
                 fn action(s: *Context) void {
-                    if (s.pdf_helper.changePage(-1)) {
+                    if (s.pdf_handler.changePage(-1)) {
                         s.resetCurrentPage();
-                        s.pdf_helper.resetZoomAndScroll();
                     }
                     s.reload_page = true;
                 }
@@ -53,7 +51,7 @@ pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
             .mods = km.zoom_in.mods,
             .handler = struct {
                 fn action(s: *Context) void {
-                    s.pdf_helper.adjustZoom(true);
+                    s.pdf_handler.adjustZoom(true);
                     s.reload_page = true;
                 }
             }.action,
@@ -63,7 +61,7 @@ pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
             .mods = km.zoom_out.mods,
             .handler = struct {
                 fn action(s: *Context) void {
-                    s.pdf_helper.adjustZoom(false);
+                    s.pdf_handler.adjustZoom(false);
                     s.reload_page = true;
                 }
             }.action,
@@ -73,7 +71,7 @@ pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
             .mods = km.scroll_up.mods,
             .handler = struct {
                 fn action(s: *Context) void {
-                    s.pdf_helper.scroll(.Up);
+                    s.pdf_handler.scroll(.Up);
                     s.reload_page = true;
                 }
             }.action,
@@ -83,7 +81,7 @@ pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
             .mods = km.scroll_down.mods,
             .handler = struct {
                 fn action(s: *Context) void {
-                    s.pdf_helper.scroll(.Down);
+                    s.pdf_handler.scroll(.Down);
                     s.reload_page = true;
                 }
             }.action,
@@ -93,7 +91,7 @@ pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
             .mods = km.scroll_left.mods,
             .handler = struct {
                 fn action(s: *Context) void {
-                    s.pdf_helper.scroll(.Left);
+                    s.pdf_handler.scroll(.Left);
                     s.reload_page = true;
                 }
             }.action,
@@ -103,7 +101,7 @@ pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
             .mods = km.scroll_right.mods,
             .handler = struct {
                 fn action(s: *Context) void {
-                    s.pdf_helper.scroll(.Right);
+                    s.pdf_handler.scroll(.Right);
                     s.reload_page = true;
                 }
             }.action,
@@ -113,7 +111,7 @@ pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
             .mods = km.colorize.mods,
             .handler = struct {
                 fn action(s: *Context) void {
-                    s.pdf_helper.toggleColor();
+                    s.pdf_handler.toggleColor();
                     s.reload_page = true;
                 }
             }.action,
