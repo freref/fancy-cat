@@ -50,10 +50,17 @@ pub const StatusBar = struct {
     },
 };
 
+pub const Cache = struct {
+    enabled: bool = true,
+    // Number of pages to cache
+    max_pages: usize = 10,
+};
+
 key_map: KeyMap,
 file_monitor: FileMonitor,
 general: General,
 status_bar: StatusBar,
+cache: Cache,
 
 pub fn init(allocator: std.mem.Allocator) !Self {
     // Create config file in ~/.config/fancy-cat/config.json
@@ -103,6 +110,7 @@ pub fn init(allocator: std.mem.Allocator) !Self {
         .file_monitor = if (root.get("FileMonitor")) |fm| try parseFileMonitor(fm, allocator) else .{},
         .general = if (root.get("General")) |g| try parseGeneral(g, allocator) else .{},
         .status_bar = if (root.get("StatusBar")) |sb| try parseStatusBar(sb, allocator) else .{},
+        .cache = if (root.get("Cache")) |c| try parseCache(c, allocator) else .{},
     };
 }
 
@@ -253,4 +261,23 @@ fn parseStatusBar(value: std.json.Value, allocator: std.mem.Allocator) !StatusBa
     }
 
     return .{};
+}
+
+fn parseCache(value: std.json.Value, allocator: std.mem.Allocator) !Cache {
+    const obj = value.object;
+
+    return Cache{
+        .enabled = try std.json.innerParseFromValue(
+            bool,
+            allocator,
+            obj.get("enabled") orelse .{ .bool = true },
+            .{},
+        ),
+        .max_pages = try std.json.innerParseFromValue(
+            usize,
+            allocator,
+            obj.get("max_size") orelse .{ .integer = 10 },
+            .{},
+        ),
+    };
 }

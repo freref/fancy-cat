@@ -27,7 +27,12 @@ x_center: f32,
 config: Config,
 cache: Cache,
 
-pub fn init(allocator: std.mem.Allocator, path: []const u8, initial_page: ?u16, config: Config) !Self {
+pub fn init(
+    allocator: std.mem.Allocator,
+    path: []const u8,
+    initial_page: ?u16,
+    config: Config,
+) !Self {
     const ctx = c.fz_new_context(null, null, c.FZ_STORE_UNLIMITED) orelse {
         std.debug.print("Failed to create mupdf context\n", .{});
         return PdfError.FailedToCreateContext;
@@ -103,8 +108,8 @@ pub fn renderPage(
     window_width: u32,
     window_height: u32,
 ) !Cache.EncodedImage {
-    if (self.cache.get(self.current_page_number)) |cached| {
-        return cached;
+    if (self.config.cache.enabled) {
+        if (self.cache.get(self.current_page_number)) |cached| return cached;
     }
 
     const page = c.fz_load_page(self.ctx, self.doc, self.current_page_number);
@@ -167,11 +172,13 @@ pub fn renderPage(
     const b64_buf = try self.allocator.alloc(u8, base64Encoder.calcSize(sample_count));
     const encoded = base64Encoder.encode(b64_buf, samples[0..sample_count]);
 
-    try self.cache.put(self.current_page_number, .{
-        .base64 = encoded,
-        .width = @intCast(width),
-        .height = @intCast(height),
-    });
+    if (self.config.cache.enabled) {
+        try self.cache.put(self.current_page_number, .{
+            .base64 = encoded,
+            .width = @intCast(width),
+            .height = @intCast(height),
+        });
+    }
 
     return Cache.EncodedImage{
         .base64 = encoded,
