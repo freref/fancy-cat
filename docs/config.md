@@ -19,16 +19,16 @@ Each binding requires:
 
 ```jsonc
 {
-  "next": { "key": "n" },                           // Next page
-  "prev": { "key": "p" },                           // Previous page
-  "scroll_up": { "key": "k" },                      // Move viewport up
-  "scroll_down": { "key": "j" },                    // Move viewport down
-  "scroll_left": { "key": "h" },                    // Move viewport left
-  "scroll_right": { "key": "l" },                   // Move viewport right
-  "zoom_in": { "key": "i" },                        // Increase zoom level
-  "zoom_out": { "key": "o" },                       // Decrease zoom level
-  "colorize": { "key": "z" },                       // Toggle color inversion
-  "quit": { "key": "c", "modifiers": ["ctrl"] }     // Exit program
+  "next": { "key": "n" }, // Next page
+  "prev": { "key": "p" }, // Previous page
+  "scroll_up": { "key": "k" }, // Move viewport up
+  "scroll_down": { "key": "j" }, // Move viewport down
+  "scroll_left": { "key": "h" }, // Move viewport left
+  "scroll_right": { "key": "l" }, // Move viewport right
+  "zoom_in": { "key": "i" }, // Increase zoom level
+  "zoom_out": { "key": "o" }, // Decrease zoom level
+  "colorize": { "key": "z" }, // Toggle color inversion
+  "quit": { "key": "c", "modifiers": ["ctrl"] } // Exit program
 }
 ```
 
@@ -60,3 +60,10 @@ Configure the information bar at screen bottom:
 - `style`: Status bar appearance
   - `bg`: Array of 3 `u8` values [r, g, b] - Text color (0-255)
   - `fg`: Array of 3 `u8` values [r, g, b] - Status bar color (0-255)
+
+## Config
+
+Configure the LRU cache
+
+- `enabled`: `bool` - Allow/disallow caching
+- `max_size`: ìnteger` - Maximum amount of pages cached
