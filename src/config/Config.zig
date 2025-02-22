@@ -36,6 +36,7 @@ pub const General = struct {
     size: f32 = 0.90,
     // percentage
     zoom_step: f32 = 0.25,
+    zoom_min: f32 = 1.0,
     // pixels
     scroll_step: f32 = 100.0,
 };
@@ -197,6 +198,12 @@ fn parseGeneral(value: std.json.Value, allocator: std.mem.Allocator) !General {
             f32,
             allocator,
             obj.get("zoom_step") orelse .{ .float = 0.25 },
+            .{},
+        ),
+        .zoom_min = try std.json.innerParseFromValue(
+            f32,
+            allocator,
+            obj.get("zoom_min") orelse .{ .float = 1.0 },
             .{},
         ),
         .scroll_step = try std.json.innerParseFromValue(

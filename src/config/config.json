@@ -24,6 +24,7 @@
     "black": "0xffffff",
     "size": 0.9,
     "zoom_step": 0.25,
+    "zoom_min": 1.0,
     "scroll_step": 100.0
   },
   "StatusBar": {
