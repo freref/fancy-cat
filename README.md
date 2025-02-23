@@ -75,7 +75,7 @@ apt install \
     zlib1g-dev
 ```
 
-> [!IMPORTANT]  
+> [!NOTE]  
 > On some Linux distributions (e.g., Fedora, Arch), replace `mupdf-third` with `mupdf` in `build.zig` to compile successfully.
 
 ### Build
