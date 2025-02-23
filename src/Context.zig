@@ -239,24 +239,23 @@ pub const Context = struct {
             .width = win.width,
             .height = 1,
         });
-
         status_bar.fill(vaxis.Cell{ .style = self.config.status_bar.style });
-
+        const mode_text = switch (self.current_state) {
+            .view => "VIS",
+            .command => "CMD",
+        };
         _ = status_bar.print(
-            &.{.{ .text = self.pdf_handler.path, .style = self.config.status_bar.style }},
+            &.{ .{ .text = mode_text, .style = self.config.status_bar.style }, .{ .text = "   ", .style = self.config.status_bar.style }, .{ .text = self.pdf_handler.path, .style = self.config.status_bar.style } },
             .{ .col_offset = 1 },
         );
-
         if (self.page_info_text.len > 0) {
             self.allocator.free(self.page_info_text);
         }
-
         self.page_info_text = try std.fmt.allocPrint(
             self.allocator,
             "{d}:{d}",
             .{ self.pdf_handler.current_page_number + 1, self.pdf_handler.total_pages },
         );
-
         _ = status_bar.print(
             &.{.{ .text = self.page_info_text, .style = self.config.status_bar.style }},
             .{ .col_offset = @intCast(win.width -| self.page_info_text.len -| 1) },
