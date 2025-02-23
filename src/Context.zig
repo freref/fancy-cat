@@ -32,7 +32,7 @@ pub const Context = struct {
     current_page: ?vaxis.Image,
     watcher: ?fzwatch.Watcher,
     watcher_thread: ?std.Thread,
-    config: Config,
+    config: *Config,
     current_state: State,
     reload_page: bool,
     cache: Cache,
@@ -45,7 +45,8 @@ pub const Context = struct {
         else
             null;
 
-        const config = try Config.init(allocator);
+        const config = try allocator.create(Config);
+        config.* = try Config.init(allocator);
 
         var pdf_handler = try PdfHandler.init(allocator, path, initial_page, config);
         errdefer pdf_handler.deinit();
@@ -88,8 +89,11 @@ pub const Context = struct {
             if (self.watcher_thread) |thread| thread.join();
             w.deinit();
         }
-        self.cache.deinit();
+
         if (self.page_info_text.len > 0) self.allocator.free(self.page_info_text);
+
+        self.allocator.destroy(self.config);
+        self.cache.deinit();
         self.pdf_handler.deinit();
         self.vx.deinit(self.allocator, self.tty.anyWriter());
         self.tty.deinit();

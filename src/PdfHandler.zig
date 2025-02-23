@@ -25,14 +25,13 @@ y_offset: f32,
 x_offset: f32,
 y_center: f32,
 x_center: f32,
-config: Config,
+config: *Config,
 
 pub fn init(
     allocator: std.mem.Allocator,
     path: []const u8,
     initial_page: ?u16,
-    // TODO pass pointer everywhere?
-    config: Config,
+    config: *Config,
 ) !Self {
     const ctx = c.fz_new_context(null, null, c.FZ_STORE_UNLIMITED) orelse {
         std.debug.print("Failed to create mupdf context\n", .{});

@@ -17,14 +17,11 @@ allocator: std.mem.Allocator,
 map: std.AutoHashMap(Key, *Node),
 head: ?*Node,
 tail: ?*Node,
-config: Config,
+config: *Config,
 lru_size: usize,
 mutex: std.Thread.Mutex,
 
-pub fn init(
-    allocator: std.mem.Allocator,
-    config: Config,
-) Self {
+pub fn init(allocator: std.mem.Allocator, config: *Config) Self {
     return .{
         .allocator = allocator,
         .map = std.AutoHashMap(Key, *Node).init(allocator),
