@@ -111,16 +111,6 @@ pub fn renderPage(
     window_width: u32,
     window_height: u32,
 ) !Cache.EncodedImage {
-    if (self.config.cache.enabled and self.zoom == 0 and self.x_offset == 0 and self.y_offset == 0 and self.check_cache) {
-        if (self.cache.get(.{
-            .colorize = self.config.general.colorize,
-            .page = self.current_page_number,
-        })) |cached| {
-            self.check_cache = false;
-            return cached;
-        }
-    }
-
     const page = c.fz_load_page(self.ctx, self.doc, self.current_page_number);
     defer c.fz_drop_page(self.ctx, page);
     const bound = c.fz_bound_page(self.ctx, page);
@@ -181,25 +171,48 @@ pub fn renderPage(
     const b64_buf = try self.allocator.alloc(u8, base64Encoder.calcSize(sample_count));
     const encoded = base64Encoder.encode(b64_buf, samples[0..sample_count]);
 
-    var cached = false;
-    if (self.config.cache.enabled) {
-        cached = try self.cache.put(.{
-            .colorize = self.config.general.colorize,
-            .page = self.current_page_number,
-        }, .{
-            .base64 = encoded,
-            .width = @intCast(width),
-            .height = @intCast(height),
-            .cached = true,
-        });
-    }
-
     return Cache.EncodedImage{
         .base64 = encoded,
         .width = @intCast(width),
         .height = @intCast(height),
-        .cached = cached,
+        .cached = false,
     };
+}
+
+pub fn getPage(
+    self: *Self,
+    window_width: u32,
+    window_height: u32,
+) !Cache.EncodedImage {
+    const shouldCheckCache = self.config.cache.enabled and
+        self.zoom == 0 and
+        self.x_offset == 0 and
+        self.y_offset == 0 and
+        self.check_cache;
+
+    if (shouldCheckCache) {
+        if (self.cache.get(.{
+            .colorize = self.config.general.colorize,
+            .page = self.current_page_number,
+        })) |cached| {
+            self.check_cache = false;
+            return cached;
+        }
+    }
+
+    var image = try self.renderPage(window_width, window_height);
+
+    var cached = false;
+    if (self.config.cache.enabled) {
+        image.cached = true;
+        cached = try self.cache.put(.{
+            .colorize = self.config.general.colorize,
+            .page = self.current_page_number,
+        }, image);
+    }
+
+    image.cached = cached;
+    return image;
 }
 
 pub fn changePage(self: *Self, delta: i32) bool {
