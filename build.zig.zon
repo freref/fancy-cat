@@ -12,7 +12,7 @@
             .hash = "1220a6181ec8374f37e49914204b98ff4cc326bfca1a46594364886fe962f998c9dd",
         },
         .fastb64z = .{
-            .url = "https://github.com/freref/fastb64z/archive/refs/heads/master.tar.gz",
+            .url = "https://github.com/freref/fastb64z/archive/fa3f34a4528609a8778124641b080e90d93c357a.tar.gz",
             .hash = "1220b5a0e9aa8d4c9b0e09c41ec3a58092888e7516c05cb78b74c9be77acaebab303",
         },
     },
