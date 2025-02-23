@@ -66,4 +66,4 @@ Configure the information bar at screen bottom:
 Configure the LRU cache
 
 - `enabled`: `bool` - Allow/disallow caching
-- `lru_size`: ìnteger` - Amount of recently visited pages that get cached
+- `lru_size`: `ìnteger` - Amount of recently visited pages that get cached
