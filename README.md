@@ -17,6 +17,15 @@
 fancy-cat <path-to-pdf> <optional-page-number>
 ```
 
+### Commands
+
+fancy-cat uses a modal interface similar to Neovim. There are two modes: view mode and command mode. To enter command mode you type `:` by default (this can be changed in the config file)
+
+#### Available Commands
+
+- `:<page-number>` - jump to the specified page number
+- `:q` - quit the application
+
 ### Configuration
 
 fancy-cat can be configured through a JSON config file located at `~/.config/fancy-cat/config.json`. The file is automatically created on the first run with default settings.
@@ -32,6 +41,10 @@ fancy-cat is available as a package in the AUR ([link](https://aur.archlinux.org
 ```sh
 paru -S fancy-cat
 ```
+
+### Nix
+
+Available as a Nix package [here](https://github.com/freref/fancy-cat-nix).
 
 ## Build Instructions
 
@@ -62,7 +75,7 @@ apt install \
     zlib1g-dev
 ```
 
-> [!IMPORTANT]  
+> [!NOTE]  
 > On some Linux distributions (e.g., Fedora, Arch), replace `mupdf-third` with `mupdf` in `build.zig` to compile successfully.
 
 ### Build
@@ -106,12 +119,13 @@ zig build run -- <path-to-pdf> <optional-page-number>
 ## Features
 
 - ✅ Filewatch (hot-reload)
-- ✅ Custom keymapping
-- ✅ Dark-mode
-- ✅ Zoom
+- ✅ Runtime config
+- ✅ Custom keymappings
+- ✅ Modal interface
+- ✅ Commands
+- ✅ Colorize mode (dark-mode)
+- ✅ Page navigation (zoom, etc.)
 - ✅ Status bar
-- 🚧 Cache
-- 🚧 Search
 
 ## Contributing
 

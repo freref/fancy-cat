@@ -8,8 +8,8 @@
             .hash = "1220b24d2e4f5b890c3c5721c50c07ae16b78ef769633ad8301563d4c249651d59a9",
         },
         .fzwatch = .{
-            .url = "https://github.com/freref/fzwatch/archive/refs/tags/v0.2.0.tar.gz",
-            .hash = "1220b0c4f4a5f3df2b1268a9da04bc901ede4f8bd2938e846ee1e88783ed57cee79a",
+            .url = "https://github.com/freref/fzwatch/archive/refs/tags/v0.2.1.tar.gz",
+            .hash = "1220a6181ec8374f37e49914204b98ff4cc326bfca1a46594364886fe962f998c9dd",
         },
         .fastb64z = .{
             .url = "https://github.com/freref/fastb64z/archive/refs/heads/master.tar.gz",

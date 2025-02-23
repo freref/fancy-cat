@@ -2,24 +2,22 @@ const Self = @This();
 const std = @import("std");
 const vaxis = @import("vaxis");
 
-pub const KeyBinding = struct {
-    key: u8,
-    modifiers: vaxis.Key.Modifiers,
-};
-
 /// XXX There is a lot of redundancy, e.g the default values. Worth checking if its necessary
 /// JSON parsing is also worth looking over again
 pub const KeyMap = struct {
-    next: KeyBinding = .{ .key = 'n', .modifiers = .{} },
-    prev: KeyBinding = .{ .key = 'p', .modifiers = .{} },
-    scroll_up: KeyBinding = .{ .key = 'k', .modifiers = .{} },
-    scroll_down: KeyBinding = .{ .key = 'j', .modifiers = .{} },
-    scroll_left: KeyBinding = .{ .key = 'h', .modifiers = .{} },
-    scroll_right: KeyBinding = .{ .key = 'l', .modifiers = .{} },
-    zoom_in: KeyBinding = .{ .key = 'i', .modifiers = .{} },
-    zoom_out: KeyBinding = .{ .key = 'o', .modifiers = .{} },
-    colorize: KeyBinding = .{ .key = 'z', .modifiers = .{} },
-    quit: KeyBinding = .{ .key = 'c', .modifiers = .{ .ctrl = true } },
+    next: vaxis.Key = .{ .codepoint = 'n', .mods = .{} },
+    prev: vaxis.Key = .{ .codepoint = 'p', .mods = .{} },
+    scroll_up: vaxis.Key = .{ .codepoint = 'k', .mods = .{} },
+    scroll_down: vaxis.Key = .{ .codepoint = 'j', .mods = .{} },
+    scroll_left: vaxis.Key = .{ .codepoint = 'h', .mods = .{} },
+    scroll_right: vaxis.Key = .{ .codepoint = 'l', .mods = .{} },
+    zoom_in: vaxis.Key = .{ .codepoint = 'i', .mods = .{} },
+    zoom_out: vaxis.Key = .{ .codepoint = 'o', .mods = .{} },
+    colorize: vaxis.Key = .{ .codepoint = 'z', .mods = .{} },
+    quit: vaxis.Key = .{ .codepoint = 'c', .mods = .{ .ctrl = true } },
+    enter_command_mode: vaxis.Key = .{ .codepoint = ':', .mods = .{} },
+    exit_command_mode: vaxis.Key = .{ .codepoint = vaxis.Key.escape, .mods = .{} },
+    execute_command: vaxis.Key = .{ .codepoint = vaxis.Key.enter, .mods = .{} },
 };
 
 /// File monitor will be used to watch for changes to files and rerender them
@@ -38,6 +36,7 @@ pub const General = struct {
     size: f32 = 0.90,
     // percentage
     zoom_step: f32 = 0.25,
+    zoom_min: f32 = 1.0,
     // pixels
     scroll_step: f32 = 100.0,
 };
@@ -51,10 +50,17 @@ pub const StatusBar = struct {
     },
 };
 
+pub const Cache = struct {
+    enabled: bool = true,
+    // Number of pages to cache
+    lru_size: usize = 10,
+};
+
 key_map: KeyMap,
 file_monitor: FileMonitor,
 general: General,
 status_bar: StatusBar,
+cache: Cache,
 
 pub fn init(allocator: std.mem.Allocator) !Self {
     // Create config file in ~/.config/fancy-cat/config.json
@@ -104,67 +110,31 @@ pub fn init(allocator: std.mem.Allocator) !Self {
         .file_monitor = if (root.get("FileMonitor")) |fm| try parseFileMonitor(fm, allocator) else .{},
         .general = if (root.get("General")) |g| try parseGeneral(g, allocator) else .{},
         .status_bar = if (root.get("StatusBar")) |sb| try parseStatusBar(sb, allocator) else .{},
+        .cache = if (root.get("Cache")) |c| try parseCache(c, allocator) else .{},
     };
 }
 
 fn parseKeyMap(value: std.json.Value, allocator: std.mem.Allocator) !KeyMap {
     const obj = value.object;
+    var keymap = KeyMap{};
 
-    return KeyMap{
-        .next = try parseKeyBinding(obj.get("next"), allocator) orelse .{
-            .key = 'n',
-            .modifiers = .{},
-        },
-        .prev = try parseKeyBinding(obj.get("prev"), allocator) orelse .{
-            .key = 'p',
-            .modifiers = .{},
-        },
-        .scroll_up = try parseKeyBinding(obj.get("scroll_up"), allocator) orelse .{
-            .key = 'k',
-            .modifiers = .{},
-        },
-        .scroll_down = try parseKeyBinding(obj.get("scroll_down"), allocator) orelse .{
-            .key = 'j',
-            .modifiers = .{},
-        },
-        .scroll_left = try parseKeyBinding(obj.get("scroll_left"), allocator) orelse .{
-            .key = 'h',
-            .modifiers = .{},
-        },
-        .scroll_right = try parseKeyBinding(obj.get("scroll_right"), allocator) orelse .{
-            .key = 'l',
-            .modifiers = .{},
-        },
-        .zoom_in = try parseKeyBinding(obj.get("zoom_in"), allocator) orelse .{
-            .key = 'i',
-            .modifiers = .{},
-        },
-        .zoom_out = try parseKeyBinding(obj.get("zoom_out"), allocator) orelse .{
-            .key = 'o',
-            .modifiers = .{},
-        },
-        .colorize = try parseKeyBinding(obj.get("colorize"), allocator) orelse .{
-            .key = 'z',
-            .modifiers = .{},
-        },
-        .quit = try parseKeyBinding(obj.get("quit"), allocator) orelse .{
-            .key = 'c',
-            .modifiers = .{ .ctrl = true },
-        },
-    };
+    inline for (std.meta.fields(KeyMap)) |field| {
+        const field_name = field.name;
+        if (obj.get(field_name)) |key_value| {
+            @field(keymap, field_name) = try parseKeyBinding(key_value, allocator);
+        }
+    }
+
+    return keymap;
 }
 
-fn parseKeyBinding(value: ?std.json.Value, allocator: std.mem.Allocator) !?KeyBinding {
-    const binding = value orelse return null;
-    const obj = binding.object;
+fn parseKeyBinding(value: std.json.Value, allocator: std.mem.Allocator) !vaxis.Key {
+    const obj = value.object;
 
-    const key = try std.json.innerParseFromValue(
-        []const u8,
-        allocator,
-        obj.get("key") orelse return null,
-        .{},
-    );
+    const key_value = obj.get("key") orelse return error.MissingKeyField;
+    const key = try std.json.innerParseFromValue([]const u8, allocator, key_value, .{});
     defer allocator.free(key);
+    if (key.len == 0) return error.EmptyKey;
 
     var modifiers = vaxis.Key.Modifiers{};
     if (obj.get("modifiers")) |mods| {
@@ -175,13 +145,20 @@ fn parseKeyBinding(value: ?std.json.Value, allocator: std.mem.Allocator) !?KeyBi
             if (std.mem.eql(u8, mod_str, "ctrl")) {
                 modifiers.ctrl = true;
             }
-            // TODO: Add more modifiers
+            // TODO Add more modifiers
         }
     }
 
-    return KeyBinding{
-        .key = key[0],
-        .modifiers = modifiers,
+    if (vaxis.Key.name_map.get(key)) |codepoint| {
+        return vaxis.Key{
+            .codepoint = codepoint,
+            .mods = modifiers,
+        };
+    }
+
+    return vaxis.Key{
+        .codepoint = @as(u21, key[0]),
+        .mods = modifiers,
     };
 }
 
@@ -231,6 +208,12 @@ fn parseGeneral(value: std.json.Value, allocator: std.mem.Allocator) !General {
             obj.get("zoom_step") orelse .{ .float = 0.25 },
             .{},
         ),
+        .zoom_min = try std.json.innerParseFromValue(
+            f32,
+            allocator,
+            obj.get("zoom_min") orelse .{ .float = 1.0 },
+            .{},
+        ),
         .scroll_step = try std.json.innerParseFromValue(
             f32,
             allocator,
@@ -278,4 +261,23 @@ fn parseStatusBar(value: std.json.Value, allocator: std.mem.Allocator) !StatusBa
     }
 
     return .{};
+}
+
+fn parseCache(value: std.json.Value, allocator: std.mem.Allocator) !Cache {
+    const obj = value.object;
+
+    return Cache{
+        .enabled = try std.json.innerParseFromValue(
+            bool,
+            allocator,
+            obj.get("enabled") orelse .{ .bool = true },
+            .{},
+        ),
+        .lru_size = try std.json.innerParseFromValue(
+            usize,
+            allocator,
+            obj.get("lru_size") orelse .{ .integer = 10 },
+            .{},
+        ),
+    };
 }
