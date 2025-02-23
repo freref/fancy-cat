@@ -25,8 +25,6 @@ x_offset: f32,
 y_center: f32,
 x_center: f32,
 config: Config,
-cache: Cache,
-check_cache: bool,
 
 pub fn init(
     allocator: std.mem.Allocator,
@@ -74,13 +72,10 @@ pub fn init(
         .y_center = 0,
         .x_center = 0,
         .config = config,
-        .cache = Cache.init(allocator, config),
-        .check_cache = true,
     };
 }
 
 pub fn deinit(self: *Self) void {
-    self.cache.deinit();
     if (self.temp_doc) |doc| c.fz_drop_document(self.ctx, doc);
     c.fz_drop_document(self.ctx, self.doc);
     c.fz_drop_context(self.ctx);
@@ -178,42 +173,6 @@ pub fn renderPage(
         .height = @intCast(height),
         .cached = false,
     };
-}
-
-pub fn getCurrentPage(
-    self: *Self,
-    window_width: u32,
-    window_height: u32,
-) !Cache.EncodedImage {
-    const shouldCheckCache = self.config.cache.enabled and
-        self.zoom == 0 and
-        self.x_offset == 0 and
-        self.y_offset == 0 and
-        self.check_cache;
-
-    if (shouldCheckCache) {
-        if (self.cache.get(.{
-            .colorize = self.config.general.colorize,
-            .page = self.current_page_number,
-        })) |cached| {
-            self.check_cache = false;
-            return cached;
-        }
-    }
-
-    var image = try self.renderPage(self.current_page_number, window_width, window_height);
-
-    var cached = false;
-    if (self.config.cache.enabled) {
-        image.cached = true;
-        cached = try self.cache.put(.{
-            .colorize = self.config.general.colorize,
-            .page = self.current_page_number,
-        }, image);
-    }
-
-    image.cached = cached;
-    return image;
 }
 
 pub fn changePage(self: *Self, delta: i32) bool {

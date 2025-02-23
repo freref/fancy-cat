@@ -3,6 +3,7 @@ const std = @import("std");
 const Config = @import("config/Config.zig");
 
 pub const Key = struct { colorize: bool, page: u16 };
+
 pub const EncodedImage = struct { base64: []const u8, width: u16, height: u16, cached: bool };
 
 const Node = struct {

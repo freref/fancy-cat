@@ -5,6 +5,7 @@ const CommandState = @import("states/CommandState.zig");
 const fzwatch = @import("fzwatch");
 const Config = @import("config/Config.zig");
 const PdfHandler = @import("./PdfHandler.zig");
+const Cache = @import("./Cache.zig");
 
 pub const panic = vaxis.panic_handler;
 
@@ -34,6 +35,8 @@ pub const Context = struct {
     config: Config,
     current_state: State,
     reload_page: bool,
+    cache: Cache,
+    check_cache: bool,
 
     pub fn init(allocator: std.mem.Allocator, args: [][]const u8) !Self {
         const path = args[1];
@@ -67,6 +70,8 @@ pub const Context = struct {
             .config = config,
             .current_state = undefined,
             .reload_page = false,
+            .cache = Cache.init(allocator, config),
+            .check_cache = true,
         };
     }
 
@@ -80,6 +85,7 @@ pub const Context = struct {
             if (self.thread) |thread| thread.join();
             w.deinit();
         }
+        self.cache.deinit();
         if (self.page_info_text.len > 0) self.allocator.free(self.page_info_text);
         self.pdf_handler.deinit();
         self.vx.deinit(self.allocator, self.tty.anyWriter());
@@ -153,7 +159,7 @@ pub const Context = struct {
             self.vx.freeImage(self.tty.anyWriter(), img.id);
             self.current_page = null;
             self.pdf_handler.resetZoomAndScroll();
-            self.pdf_handler.check_cache = true;
+            self.check_cache = true;
         }
     }
 
@@ -179,7 +185,7 @@ pub const Context = struct {
             .winsize => |ws| {
                 try self.vx.resize(self.allocator, self.tty.anyWriter(), ws);
                 self.pdf_handler.resetZoomAndScroll();
-                self.pdf_handler.cache.clear();
+                self.cache.clear();
                 self.reload_page = true;
             },
             .file_changed => {
@@ -187,6 +193,46 @@ pub const Context = struct {
                 self.reload_page = true;
             },
         }
+    }
+
+    pub fn getCurrentPage(
+        self: *Self,
+        window_width: u32,
+        window_height: u32,
+    ) !Cache.EncodedImage {
+        const shouldCheckCache = self.config.cache.enabled and
+            self.pdf_handler.zoom == 0 and
+            self.pdf_handler.x_offset == 0 and
+            self.pdf_handler.y_offset == 0 and
+            self.check_cache;
+
+        if (shouldCheckCache) {
+            if (self.cache.get(.{
+                .colorize = self.config.general.colorize,
+                .page = self.pdf_handler.current_page_number,
+            })) |cached| {
+                self.check_cache = false;
+                return cached;
+            }
+        }
+
+        var image = try self.pdf_handler.renderPage(
+            self.pdf_handler.current_page_number,
+            window_width,
+            window_height,
+        );
+
+        var cached = false;
+        if (self.config.cache.enabled) {
+            image.cached = true;
+            cached = try self.cache.put(.{
+                .colorize = self.config.general.colorize,
+                .page = self.pdf_handler.current_page_number,
+            }, image);
+        }
+
+        image.cached = cached;
+        return image;
     }
 
     pub fn drawCurrentPage(self: *Self, win: vaxis.Window) !void {
@@ -201,7 +247,7 @@ pub const Context = struct {
                 y_pix -|= 2 * pix_per_row;
             }
 
-            const encoded_image = try self.pdf_handler.getCurrentPage(x_pix, y_pix);
+            const encoded_image = try self.getCurrentPage(x_pix, y_pix);
             defer if (!encoded_image.cached) self.allocator.free(encoded_image.base64);
 
             self.current_page = try self.vx.transmitPreEncodedImage(
