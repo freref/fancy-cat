@@ -32,7 +32,7 @@ pub fn init(
     allocator: std.mem.Allocator,
     path: []const u8,
     initial_page: ?u16,
-    // TODO pass pointer?
+    // TODO pass pointer everywhere?
     config: Config,
 ) !Self {
     const ctx = c.fz_new_context(null, null, c.FZ_STORE_UNLIMITED) orelse {
@@ -112,7 +112,10 @@ pub fn renderPage(
     window_height: u32,
 ) !Cache.EncodedImage {
     if (self.config.cache.enabled and self.zoom == 0 and self.x_offset == 0 and self.y_offset == 0 and self.check_cache) {
-        if (self.cache.get(self.current_page_number)) |cached| {
+        if (self.cache.get(.{
+            .colorize = self.config.general.colorize,
+            .page = self.current_page_number,
+        })) |cached| {
             self.check_cache = false;
             return cached;
         }
@@ -180,7 +183,10 @@ pub fn renderPage(
 
     var cached = false;
     if (self.config.cache.enabled) {
-        cached = try self.cache.put(self.current_page_number, .{
+        cached = try self.cache.put(.{
+            .colorize = self.config.general.colorize,
+            .page = self.current_page_number,
+        }, .{
             .base64 = encoded,
             .width = @intCast(width),
             .height = @intCast(height),
