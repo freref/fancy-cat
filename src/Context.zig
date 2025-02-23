@@ -245,7 +245,11 @@ pub const Context = struct {
             .command => "CMD",
         };
         _ = status_bar.print(
-            &.{ .{ .text = mode_text, .style = self.config.status_bar.style }, .{ .text = "   ", .style = self.config.status_bar.style }, .{ .text = self.pdf_handler.path, .style = self.config.status_bar.style } },
+            &.{
+                .{ .text = mode_text, .style = self.config.status_bar.style },
+                .{ .text = "   ", .style = self.config.status_bar.style },
+                .{ .text = self.pdf_handler.path, .style = self.config.status_bar.style },
+            },
             .{ .col_offset = 1 },
         );
         if (self.page_info_text.len > 0) {
