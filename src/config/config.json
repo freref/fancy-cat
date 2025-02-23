@@ -36,6 +36,6 @@
   },
   "Cache": {
     "enabled": true,
-    "max_size": 10
+    "lru_size": 10
   }
 }

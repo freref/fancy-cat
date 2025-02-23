@@ -18,7 +18,7 @@ map: std.AutoHashMap(Key, *Node),
 head: ?*Node,
 tail: ?*Node,
 config: Config,
-max_pages: usize,
+lru_size: usize,
 mutex: std.Thread.Mutex,
 
 pub fn init(
@@ -31,7 +31,7 @@ pub fn init(
         .head = null,
         .tail = null,
         .config = config,
-        .max_pages = config.cache.max_pages,
+        .lru_size = config.cache.lru_size,
         .mutex = .{},
     };
 }
@@ -95,7 +95,7 @@ pub fn put(self: *Self, key: Key, image: CachedImage) !bool {
     try self.map.put(key, new_node);
     self.addToFront(new_node);
 
-    if (self.map.count() > self.max_pages) {
+    if (self.map.count() > self.lru_size) {
         const tail_node = self.tail orelse unreachable;
         _ = self.map.remove(tail_node.key);
         self.removeNode(tail_node);
