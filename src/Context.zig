@@ -200,6 +200,7 @@ pub const Context = struct {
         window_width: u32,
         window_height: u32,
     ) !Cache.EncodedImage {
+        // TODO make this interchangeable with other file formats (no pdf specific logic in context)
         const shouldCheckCache = self.config.cache.enabled and
             self.pdf_handler.zoom == 0 and
             self.pdf_handler.x_offset == 0 and
@@ -211,6 +212,9 @@ pub const Context = struct {
                 .colorize = self.config.general.colorize,
                 .page = self.pdf_handler.current_page_number,
             })) |cached| {
+                // Once we get the cached image we don't need to check the cache anymore because
+                // The only actions a user can take is zoom or scrolling, but we don't cache those
+                // Or go to the next page, at which point we set check_cache to true again
                 self.check_cache = false;
                 return cached;
             }
