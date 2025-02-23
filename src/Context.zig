@@ -56,11 +56,14 @@ pub const Context = struct {
             if (watcher) |*w| try w.addFile(path);
         }
 
+        const vx = try vaxis.init(allocator, .{});
+        const tty = try vaxis.Tty.init();
+
         return .{
             .allocator = allocator,
             .should_quit = false,
-            .tty = try vaxis.Tty.init(),
-            .vx = try vaxis.init(allocator, .{}),
+            .tty = tty,
+            .vx = vx,
             .pdf_handler = pdf_handler,
             .page_info_text = &[_]u8{},
             .current_page = null,
@@ -233,20 +236,19 @@ pub const Context = struct {
             .rgb,
         );
 
-        var cached = false;
-        if (self.config.cache.enabled) {
+        if (!self.config.cache.enabled) return;
+
+        if (self.current_page) |img| {
             image.cached = true;
 
-            cached = try self.cache.put(.{
+            _ = try self.cache.put(.{
                 .colorize = self.config.general.colorize,
                 .page = self.pdf_handler.current_page_number,
             }, .{
-                .image = self.current_page,
+                .image = img,
                 .cached = true,
             });
         }
-
-        image.cached = cached;
     }
 
     pub fn drawCurrentPage(self: *Self, win: vaxis.Window) !void {

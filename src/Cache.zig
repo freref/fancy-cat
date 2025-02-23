@@ -1,10 +1,10 @@
 const Self = @This();
 const std = @import("std");
 const Config = @import("config/Config.zig");
-const Vaxis = @import("vaxis");
+const vaxis = @import("vaxis");
 
 pub const Key = struct { colorize: bool, page: u16 };
-pub const CachedImage = struct { image: ?Vaxis.Image, cached: bool };
+pub const CachedImage = struct { image: vaxis.Image, cached: bool };
 
 const Node = struct {
     key: Key,
@@ -21,7 +21,10 @@ config: Config,
 max_pages: usize,
 mutex: std.Thread.Mutex,
 
-pub fn init(allocator: std.mem.Allocator, config: Config) Self {
+pub fn init(
+    allocator: std.mem.Allocator,
+    config: Config,
+) Self {
     return .{
         .allocator = allocator,
         .map = std.AutoHashMap(Key, *Node).init(allocator),
@@ -51,6 +54,10 @@ pub fn clear(self: *Self) void {
 
     var current = self.head;
     while (current) |node| {
+        std.debug.print("Freeing image {}\n", .{node.value.image.id});
+        // TODO clear the image from the terminal everywhere
+        // Currently assuming the terminal takes care of it somewhat
+        //self.vx.freeImage(self.tty.anyWriter(), node.value.image.id);
         const next = node.next;
         self.allocator.destroy(node);
         current = next;
