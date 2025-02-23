@@ -31,7 +31,7 @@ pub const Context = struct {
     page_info_text: []u8,
     current_page: ?vaxis.Image,
     watcher: ?fzwatch.Watcher,
-    thread: ?std.Thread,
+    watcher_thread: ?std.Thread,
     config: Config,
     current_state: State,
     reload_page: bool,
@@ -69,7 +69,7 @@ pub const Context = struct {
             .current_page = null,
             .watcher = watcher,
             .mouse = null,
-            .thread = null,
+            .watcher_thread = null,
             .config = config,
             .current_state = undefined,
             .reload_page = false,
@@ -85,7 +85,7 @@ pub const Context = struct {
         }
         if (self.watcher) |*w| {
             w.stop();
-            if (self.thread) |thread| thread.join();
+            if (self.watcher_thread) |thread| thread.join();
             w.deinit();
         }
         self.cache.deinit();
@@ -104,7 +104,7 @@ pub const Context = struct {
         }
     }
 
-    fn watcherThread(self: *Self, watcher: *fzwatch.Watcher) !void {
+    fn watcherWorker(self: *Self, watcher: *fzwatch.Watcher) !void {
         try watcher.start(.{ .latency = self.config.file_monitor.latency });
     }
 
@@ -126,7 +126,7 @@ pub const Context = struct {
         if (self.config.file_monitor.enabled) {
             if (self.watcher) |*w| {
                 w.setCallback(callback, &loop);
-                self.thread = try std.Thread.spawn(.{}, watcherThread, .{ self, w });
+                self.watcher_thread = try std.Thread.spawn(.{}, watcherWorker, .{ self, w });
             }
         }
 
