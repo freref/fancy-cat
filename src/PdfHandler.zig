@@ -108,10 +108,11 @@ pub fn commitReload(self: *Self) void {
 
 pub fn renderPage(
     self: *Self,
+    page_number: u16,
     window_width: u32,
     window_height: u32,
 ) !Cache.EncodedImage {
-    const page = c.fz_load_page(self.ctx, self.doc, self.current_page_number);
+    const page = c.fz_load_page(self.ctx, self.doc, page_number);
     defer c.fz_drop_page(self.ctx, page);
     const bound = c.fz_bound_page(self.ctx, page);
 
@@ -179,7 +180,7 @@ pub fn renderPage(
     };
 }
 
-pub fn getPage(
+pub fn getCurrentPage(
     self: *Self,
     window_width: u32,
     window_height: u32,
@@ -200,7 +201,7 @@ pub fn getPage(
         }
     }
 
-    var image = try self.renderPage(window_width, window_height);
+    var image = try self.renderPage(self.current_page_number, window_width, window_height);
 
     var cached = false;
     if (self.config.cache.enabled) {

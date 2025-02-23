@@ -179,6 +179,7 @@ pub const Context = struct {
             .winsize => |ws| {
                 try self.vx.resize(self.allocator, self.tty.anyWriter(), ws);
                 self.pdf_handler.resetZoomAndScroll();
+                self.pdf_handler.cache.clear();
                 self.reload_page = true;
             },
             .file_changed => {
@@ -200,7 +201,7 @@ pub const Context = struct {
                 y_pix -|= 2 * pix_per_row;
             }
 
-            const encoded_image = try self.pdf_handler.getPage(x_pix, y_pix);
+            const encoded_image = try self.pdf_handler.getCurrentPage(x_pix, y_pix);
             defer if (!encoded_image.cached) self.allocator.free(encoded_image.base64);
 
             self.current_page = try self.vx.transmitPreEncodedImage(

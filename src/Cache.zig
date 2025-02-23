@@ -18,6 +18,7 @@ head: ?*Node,
 tail: ?*Node,
 config: Config,
 max_pages: usize,
+mutex: std.Thread.Mutex,
 
 pub fn init(allocator: std.mem.Allocator, config: Config) Self {
     return .{
@@ -27,10 +28,13 @@ pub fn init(allocator: std.mem.Allocator, config: Config) Self {
         .tail = null,
         .config = config,
         .max_pages = config.cache.max_pages,
+        .mutex = .{},
     };
 }
 
 pub fn deinit(self: *Self) void {
+    self.mutex.lock();
+    defer self.mutex.unlock();
     var current = self.head;
     while (current) |node| {
         const next = node.next;
@@ -41,13 +45,34 @@ pub fn deinit(self: *Self) void {
     self.map.deinit();
 }
 
+pub fn clear(self: *Self) void {
+    self.mutex.lock();
+    defer self.mutex.unlock();
+
+    var current = self.head;
+    while (current) |node| {
+        const next = node.next;
+        self.allocator.free(node.value.base64);
+        self.allocator.destroy(node);
+        current = next;
+    }
+
+    self.map.clearRetainingCapacity();
+    self.head = null;
+    self.tail = null;
+}
+
 pub fn get(self: *Self, key: Key) ?EncodedImage {
+    self.mutex.lock();
+    defer self.mutex.unlock();
     const node = self.map.get(key) orelse return null;
     self.moveToFront(node);
     return node.value;
 }
 
 pub fn put(self: *Self, key: Key, image: EncodedImage) !bool {
+    self.mutex.lock();
+    defer self.mutex.unlock();
     if (self.map.get(key)) |node| {
         self.moveToFront(node);
         return false;
