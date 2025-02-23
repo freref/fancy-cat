@@ -155,12 +155,9 @@ pub const Context = struct {
     }
 
     pub fn resetCurrentPage(self: *Self) void {
-        if (self.current_page) |img| {
-            self.vx.freeImage(self.tty.anyWriter(), img.id);
-            self.current_page = null;
-            self.pdf_handler.resetZoomAndScroll();
-            self.check_cache = true;
-        }
+        self.current_page = null;
+        self.pdf_handler.resetZoomAndScroll();
+        self.check_cache = true;
     }
 
     pub fn handleKeyStroke(self: *Self, key: vaxis.Key) !void {
@@ -217,6 +214,7 @@ pub const Context = struct {
                 // Or go to the next page, at which point we set check_cache to true again
                 self.check_cache = false;
                 self.current_page = cached.image;
+                return;
             }
         }
 
