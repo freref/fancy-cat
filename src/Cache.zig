@@ -54,7 +54,6 @@ pub fn clear(self: *Self) void {
 
     var current = self.head;
     while (current) |node| {
-        std.debug.print("Freeing image {}\n", .{node.value.image.id});
         // TODO clear the image from the terminal everywhere
         // Currently assuming the terminal takes care of it somewhat
         //self.vx.freeImage(self.tty.anyWriter(), node.value.image.id);

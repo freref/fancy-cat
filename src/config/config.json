@@ -36,6 +36,8 @@
   },
   "Cache": {
     "enabled": true,
-    "lru_size": 10
+    "lru_size": 10,
+    "prefetch_prev": 10,
+    "prefetch_next": 10
   }
 }
