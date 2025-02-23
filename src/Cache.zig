@@ -1,14 +1,14 @@
 const Self = @This();
 const std = @import("std");
 const Config = @import("config/Config.zig");
+const Vaxis = @import("vaxis");
 
 pub const Key = struct { colorize: bool, page: u16 };
-
-pub const EncodedImage = struct { base64: []const u8, width: u16, height: u16, cached: bool };
+pub const CachedImage = struct { image: ?Vaxis.Image, cached: bool };
 
 const Node = struct {
     key: Key,
-    value: EncodedImage,
+    value: CachedImage,
     prev: ?*Node,
     next: ?*Node,
 };
@@ -39,7 +39,6 @@ pub fn deinit(self: *Self) void {
     var current = self.head;
     while (current) |node| {
         const next = node.next;
-        self.allocator.free(node.value.base64);
         self.allocator.destroy(node);
         current = next;
     }
@@ -53,7 +52,6 @@ pub fn clear(self: *Self) void {
     var current = self.head;
     while (current) |node| {
         const next = node.next;
-        self.allocator.free(node.value.base64);
         self.allocator.destroy(node);
         current = next;
     }
@@ -63,7 +61,7 @@ pub fn clear(self: *Self) void {
     self.tail = null;
 }
 
-pub fn get(self: *Self, key: Key) ?EncodedImage {
+pub fn get(self: *Self, key: Key) ?CachedImage {
     self.mutex.lock();
     defer self.mutex.unlock();
     const node = self.map.get(key) orelse return null;
@@ -71,7 +69,7 @@ pub fn get(self: *Self, key: Key) ?EncodedImage {
     return node.value;
 }
 
-pub fn put(self: *Self, key: Key, image: EncodedImage) !bool {
+pub fn put(self: *Self, key: Key, image: CachedImage) !bool {
     self.mutex.lock();
     defer self.mutex.unlock();
     if (self.map.get(key)) |node| {
@@ -94,7 +92,6 @@ pub fn put(self: *Self, key: Key, image: EncodedImage) !bool {
         const tail_node = self.tail orelse unreachable;
         _ = self.map.remove(tail_node.key);
         self.removeNode(tail_node);
-        self.allocator.free(tail_node.value.base64);
         self.allocator.destroy(tail_node);
     }
 

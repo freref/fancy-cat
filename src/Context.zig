@@ -199,7 +199,7 @@ pub const Context = struct {
         self: *Self,
         window_width: u32,
         window_height: u32,
-    ) !Cache.EncodedImage {
+    ) !void {
         // TODO make this interchangeable with other file formats (no pdf specific logic in context)
         const shouldCheckCache = self.config.cache.enabled and
             self.pdf_handler.zoom == 0 and
@@ -216,7 +216,7 @@ pub const Context = struct {
                 // The only actions a user can take is zoom or scrolling, but we don't cache those
                 // Or go to the next page, at which point we set check_cache to true again
                 self.check_cache = false;
-                return cached;
+                self.current_page = cached.image;
             }
         }
 
@@ -225,18 +225,30 @@ pub const Context = struct {
             window_width,
             window_height,
         );
+        defer self.allocator.free(image.base64);
+
+        self.current_page = try self.vx.transmitPreEncodedImage(
+            self.tty.anyWriter(),
+            image.base64,
+            image.width,
+            image.height,
+            .rgb,
+        );
 
         var cached = false;
         if (self.config.cache.enabled) {
             image.cached = true;
+
             cached = try self.cache.put(.{
                 .colorize = self.config.general.colorize,
                 .page = self.pdf_handler.current_page_number,
-            }, image);
+            }, .{
+                .image = self.current_page,
+                .cached = true,
+            });
         }
 
         image.cached = cached;
-        return image;
     }
 
     pub fn drawCurrentPage(self: *Self, win: vaxis.Window) !void {
@@ -251,16 +263,7 @@ pub const Context = struct {
                 y_pix -|= 2 * pix_per_row;
             }
 
-            const encoded_image = try self.getCurrentPage(x_pix, y_pix);
-            defer if (!encoded_image.cached) self.allocator.free(encoded_image.base64);
-
-            self.current_page = try self.vx.transmitPreEncodedImage(
-                self.tty.anyWriter(),
-                encoded_image.base64,
-                encoded_image.width,
-                encoded_image.height,
-                .rgb,
-            );
+            try self.getCurrentPage(x_pix, y_pix);
 
             self.reload_page = false;
         }

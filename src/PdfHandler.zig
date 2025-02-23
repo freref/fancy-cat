@@ -9,6 +9,7 @@ const c = @cImport({
     @cInclude("mupdf/pdf.h");
 });
 
+pub const EncodedImage = struct { base64: []const u8, width: u16, height: u16, cached: bool };
 pub const PdfError = error{ FailedToCreateContext, FailedToOpenDocument, InvalidPageNumber };
 pub const ScrollDirection = enum { Up, Down, Left, Right };
 
@@ -106,7 +107,7 @@ pub fn renderPage(
     page_number: u16,
     window_width: u32,
     window_height: u32,
-) !Cache.EncodedImage {
+) !EncodedImage {
     const page = c.fz_load_page(self.ctx, self.doc, page_number);
     defer c.fz_drop_page(self.ctx, page);
     const bound = c.fz_bound_page(self.ctx, page);
@@ -167,7 +168,7 @@ pub fn renderPage(
     const b64_buf = try self.allocator.alloc(u8, base64Encoder.calcSize(sample_count));
     const encoded = base64Encoder.encode(b64_buf, samples[0..sample_count]);
 
-    return Cache.EncodedImage{
+    return EncodedImage{
         .base64 = encoded,
         .width = @intCast(width),
         .height = @intCast(height),
