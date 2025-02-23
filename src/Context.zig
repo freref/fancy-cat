@@ -221,7 +221,7 @@ pub const Context = struct {
             }
         }
 
-        var image = try self.pdf_handler.renderPage(
+        const image = try self.pdf_handler.renderPage(
             self.pdf_handler.current_page_number,
             window_width,
             window_height,
@@ -239,15 +239,10 @@ pub const Context = struct {
         if (!self.config.cache.enabled) return;
 
         if (self.current_page) |img| {
-            image.cached = true;
-
             _ = try self.cache.put(.{
                 .colorize = self.config.general.colorize,
                 .page = self.pdf_handler.current_page_number,
-            }, .{
-                .image = img,
-                .cached = true,
-            });
+            }, .{ .image = img });
         }
     }
 

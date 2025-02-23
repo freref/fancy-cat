@@ -4,7 +4,7 @@ const Config = @import("config/Config.zig");
 const vaxis = @import("vaxis");
 
 pub const Key = struct { colorize: bool, page: u16 };
-pub const CachedImage = struct { image: vaxis.Image, cached: bool };
+pub const CachedImage = struct { image: vaxis.Image };
 
 const Node = struct {
     key: Key,
