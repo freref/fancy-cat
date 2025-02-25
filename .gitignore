@@ -21,7 +21,7 @@ zig-out/
 # releases to make it less annoying to work with multiple branches.
 zig-cache/
 
-example.pdf
+*.pdf
 *.typst
 target/
 *.jpg

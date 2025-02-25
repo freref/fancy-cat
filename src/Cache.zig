@@ -19,7 +19,6 @@ head: ?*Node,
 tail: ?*Node,
 config: *Config,
 lru_size: usize,
-mutex: std.Thread.Mutex,
 
 pub fn init(allocator: std.mem.Allocator, config: *Config) Self {
     return .{
@@ -29,13 +28,10 @@ pub fn init(allocator: std.mem.Allocator, config: *Config) Self {
         .tail = null,
         .config = config,
         .lru_size = config.cache.lru_size,
-        .mutex = .{},
     };
 }
 
 pub fn deinit(self: *Self) void {
-    self.mutex.lock();
-    defer self.mutex.unlock();
     var current = self.head;
     while (current) |node| {
         const next = node.next;
@@ -46,9 +42,6 @@ pub fn deinit(self: *Self) void {
 }
 
 pub fn clear(self: *Self) void {
-    self.mutex.lock();
-    defer self.mutex.unlock();
-
     var current = self.head;
     while (current) |node| {
         // TODO clear the image from the terminal everywhere
@@ -65,16 +58,12 @@ pub fn clear(self: *Self) void {
 }
 
 pub fn get(self: *Self, key: Key) ?CachedImage {
-    self.mutex.lock();
-    defer self.mutex.unlock();
     const node = self.map.get(key) orelse return null;
     self.moveToFront(node);
     return node.value;
 }
 
 pub fn put(self: *Self, key: Key, image: CachedImage) !bool {
-    self.mutex.lock();
-    defer self.mutex.unlock();
     if (self.map.get(key)) |node| {
         self.moveToFront(node);
         return false;
