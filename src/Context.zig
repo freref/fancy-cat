@@ -211,6 +211,7 @@ pub const Context = struct {
             self.pdf_handler.y_offset == 0 and
             self.config.cache.enabled;
 
+        // TODO check if the image is still in the terminal's memory
         if (defaultPage and self.check_cache) {
             if (self.cache.get(.{
                 .colorize = self.config.general.colorize,
