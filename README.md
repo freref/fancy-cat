@@ -70,14 +70,14 @@ zig build --fetch
 3. Build the project:
 
 ```sh
-zig build -Dprefix=$HOME/.local --release=small
+zig build --release=small
 ```
 
 > [!NOTE]
 > There is a [known issue](https://github.com/freref/fancy-cat/issues/18) with some processors; if the build fails on step 7/10 with the error `LLVM ERROR: Do not know how to expand the result of this operator!` then try the command below instead:
 >
 > ```sh
-> zig build -Dprefix=$HOME/.local -Dcpu="skylake" --release=small
+> zig build -Dcpu="skylake" --release=small
 > ```
 
 4. Install:
@@ -94,7 +94,7 @@ mv zig-out/bin/fancy-cat /usr/local/bin/
 ### Run
 
 ```sh
-zig build -Dprefix=$HOME/.local run -- <path-to-pdf> <optional-page-number>
+zig build run -- <path-to-pdf> <optional-page-number>
 ```
 
 ## Features
