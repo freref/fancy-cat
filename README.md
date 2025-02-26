@@ -52,56 +52,37 @@ Available as a Nix package [here](https://github.com/freref/fancy-cat-nix).
 
 - Zig version `0.13.0`
 - Terminal emulator with the Kitty image protocol (e.g. Kitty, Ghostty, WezTerm, etc.)
-- [MuPDF](https://mupdf.readthedocs.io/en/latest/quick-start-guide.html)
-
-#### MacOS
-
-```sh
-brew install mupdf
-```
-
-#### Linux
-
-```sh
-apt install \
-    libmupdf-dev \
-    libharfbuzz-dev \
-    libfreetype6-dev \
-    libjbig2dec0-dev \
-    libjpeg-dev \
-    libopenjp2-7-dev \
-    libgumbo-dev \
-    libmujs-dev \
-    zlib1g-dev
-```
-
-> [!NOTE]  
-> On some Linux distributions (e.g., Fedora, Arch), replace `mupdf-third` with `mupdf` in `build.zig` to compile successfully.
 
 ### Build
 
-1. Fetch dependencies:
+1. Fetch submodules:
+
+```
+git submodule update --init --recursive
+```
+
+2. Fetch dependencies:
 
 ```sh
 zig build --fetch
 ```
 
-2. Build the project:
+3. Build the project:
 
 ```sh
-zig build --release=fast
+zig build -Dprefix=$HOME/.local --release=small
 ```
 
 > [!NOTE]
 > There is a [known issue](https://github.com/freref/fancy-cat/issues/18) with some processors; if the build fails on step 7/10 with the error `LLVM ERROR: Do not know how to expand the result of this operator!` then try the command below instead:
 >
-> ```
-> zig build --release=fast -Dcpu="skylake"
+> ```sh
+> zig build -Dprefix=$HOME/.local -Dcpu="skylake" --release=small
 > ```
 
-3. Install:
+4. Install:
 
-```
+```sh
 # Add to your PATH
 # Linux
 mv zig-out/bin/fancy-cat ~/.local/bin/
@@ -112,8 +93,8 @@ mv zig-out/bin/fancy-cat /usr/local/bin/
 
 ### Run
 
-```
-zig build run -- <path-to-pdf> <optional-page-number>
+```sh
+zig build -Dprefix=$HOME/.local run -- <path-to-pdf> <optional-page-number>
 ```
 
 ## Features
