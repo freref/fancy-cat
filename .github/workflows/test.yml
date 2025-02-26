@@ -23,7 +23,7 @@ jobs:
         with:
           version: 0.13.0
 
-      - run: zig build -Dprefix=$HOME/.local
+      - run: zig build
   lint:
     runs-on: ubuntu-latest
     steps:
