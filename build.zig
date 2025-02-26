@@ -21,7 +21,7 @@ pub fn build(b: *std.Build) void {
 
     make_args.append("make") catch unreachable;
     make_args.append("-C") catch unreachable;
-    make_args.append("thirdparty/mupdf") catch unreachable;
+    make_args.append("deps/mupdf") catch unreachable;
 
     if (target.result.os.tag == .linux) {
         make_args.append("HAVE_X11=no") catch unreachable;
