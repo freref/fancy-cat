@@ -43,18 +43,9 @@ pub fn build(b: *std.Build) void {
     exe.headerpad_max_install_names = true;
 
     const deps = .{
-        .vaxis = b.dependency("vaxis", .{
-            .target = target,
-            .optimize = optimize,
-        }),
-        .fzwatch = b.dependency("fzwatch", .{
-            .target = target,
-            .optimize = optimize,
-        }),
-        .fastb64z = b.dependency("fastb64z", .{
-            .target = target,
-            .optimize = optimize,
-        }),
+        .vaxis = b.dependency("vaxis", .{ .target = target, .optimize = optimize }),
+        .fzwatch = b.dependency("fzwatch", .{ .target = target, .optimize = optimize }),
+        .fastb64z = b.dependency("fastb64z", .{ .target = target, .optimize = optimize }),
     };
 
     exe.root_module.addImport("fastb64z", deps.fastb64z.module("fastb64z"));
