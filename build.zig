@@ -28,7 +28,7 @@ pub fn build(b: *std.Build) void {
         make_args.append("HAVE_GLUT=no") catch unreachable;
     }
 
-    make_args.append("XCFLAGS=-DTOFU -DTOFU_CJK -DFZ_ENABLE_PDF=1 " ++
+    make_args.append("XCFLAGS=-w -DTOFU -DTOFU_CJK -DFZ_ENABLE_PDF=1 " ++
         "-DFZ_ENABLE_XPS=0 -DFZ_ENABLE_SVG=0 -DFZ_ENABLE_CBZ=0 " ++
         "-DFZ_ENABLE_IMG=0 -DFZ_ENABLE_HTML=0 -DFZ_ENABLE_EPUB=0") catch unreachable;
     make_args.append("tools=no") catch unreachable;
