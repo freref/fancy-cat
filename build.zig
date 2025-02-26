@@ -7,7 +7,6 @@ fn addMupdfDeps(exe: *std.Build.Step.Compile, b: *std.Build, prefix: []const u8)
     exe.addObjectFile(.{ .cwd_relative = b.fmt("{s}/lib/libmupdf.a", .{prefix}) });
     exe.addObjectFile(.{ .cwd_relative = b.fmt("{s}/lib/libmupdf-third.a", .{prefix}) });
 
-    exe.linkSystemLibrary("z");
     exe.linkLibC();
 }
 
