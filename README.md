@@ -58,7 +58,7 @@ Available as a Nix package [here](https://github.com/freref/fancy-cat-nix).
 1. Fetch submodules:
 
 ```
-  git submodule update --init --recursive
+git submodule update --init --recursive
 ```
 
 2. Fetch dependencies:
