@@ -77,7 +77,7 @@ sudo zig build -Dprefix=/usr/local --release=fast
 > There is a [known issue](https://github.com/freref/fancy-cat/issues/18) with some processors; if the build fails on step 7/10 with the error `LLVM ERROR: Do not know how to expand the result of this operator!` then try the command below instead:
 >
 > ```
-> zig build -Dprefix=/usr/local -Dcpu="skylake" --release=fast
+> sudo zig build -Dprefix=/usr/local -Dcpu="skylake" --release=fast
 > ```
 
 3. Install:
@@ -94,7 +94,7 @@ mv zig-out/bin/fancy-cat /usr/local/bin/
 ### Run
 
 ```
-zig build run -- <path-to-pdf> <optional-page-number>
+zig build -Dprefix=/usr/local run -- <path-to-pdf> <optional-page-number>
 ```
 
 ## Features
