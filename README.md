@@ -52,44 +52,22 @@ Available as a Nix package [here](https://github.com/freref/fancy-cat-nix).
 
 - Zig version `0.13.0`
 - Terminal emulator with the Kitty image protocol (e.g. Kitty, Ghostty, WezTerm, etc.)
-- [MuPDF](https://mupdf.readthedocs.io/en/latest/quick-start-guide.html)
-
-#### MacOS
-
-```sh
-brew install mupdf
-```
-
-#### Linux
-
-```sh
-apt install \
-    libmupdf-dev \
-    libharfbuzz-dev \
-    libfreetype6-dev \
-    libjbig2dec0-dev \
-    libjpeg-dev \
-    libopenjp2-7-dev \
-    libgumbo-dev \
-    libmujs-dev \
-    zlib1g-dev
-```
-
-> [!NOTE]  
-> On some Linux distributions (e.g., Fedora, Arch), replace `mupdf-third` with `mupdf` in `build.zig` to compile successfully.
 
 ### Build
-
-1. Fetch dependencies:
+1. Fetch submodules:
+```
+  git submodule update --init --recursive
+```
+2. Fetch dependencies:
 
 ```sh
 zig build --fetch
 ```
 
-2. Build the project:
+3. Build the project:
 
 ```sh
-zig build --release=fast
+sudo zig build -Dprefix=/usr/local --release=fast
 ```
 
 > [!NOTE]
