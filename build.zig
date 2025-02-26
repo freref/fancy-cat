@@ -15,13 +15,24 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     const prefix = b.option([]const u8, "prefix", "Installation prefix") orelse "./local";
-    const mupdf_build_step = b.addSystemCommand(&[_][]const u8{
-        "make",
-        "-C",
-        "thirdparty/mupdf",
-        b.fmt("prefix={s}", .{prefix}),
-        "install",
-    });
+
+    var make_args = std.ArrayList([]const u8).init(b.allocator);
+    defer make_args.deinit();
+
+    make_args.append("make") catch unreachable;
+    make_args.append("-C") catch unreachable;
+    make_args.append("thirdparty/mupdf") catch unreachable;
+
+    if (target.result.os.tag == .linux) {
+        make_args.append("HAVE_X11=no") catch unreachable;
+        make_args.append("HAVE_GLUT=no") catch unreachable;
+    }
+
+    const prefix_arg = b.fmt("prefix={s}", .{prefix});
+    make_args.append(prefix_arg) catch unreachable;
+    make_args.append("install") catch unreachable;
+
+    const mupdf_build_step = b.addSystemCommand(make_args.items);
 
     const exe = b.addExecutable(.{
         .name = "fancy-cat",
