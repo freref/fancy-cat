@@ -23,7 +23,7 @@ jobs:
         with:
           version: 0.13.0
 
-      - run: sudo zig build -Dprefix=/usr/local
+      - run: zig build -Dprefix=/usr/local
 
   lint:
     runs-on: ubuntu-latest
