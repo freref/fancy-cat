@@ -195,6 +195,7 @@ pub const Context = struct {
             },
             .file_changed => {
                 try self.pdf_handler.reloadDocument();
+                // we could remove the current page from the cache here
                 self.reload_page = true;
             },
         }
