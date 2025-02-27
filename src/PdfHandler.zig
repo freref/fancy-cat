@@ -82,11 +82,16 @@ pub fn deinit(self: *Self) void {
 }
 
 pub fn reloadDocument(self: *Self) !void {
+    if (self.temp_doc) |doc| {
+        c.fz_drop_document(self.ctx, doc);
+        self.temp_doc = null;
+    }
+
     self.temp_doc = c.fz_open_document(self.ctx, self.path.ptr) orelse {
         std.debug.print("Failed to reload document\n", .{});
         return PdfError.FailedToOpenDocument;
     };
-    // TODO check this more efficient
+
     self.total_pages = @as(u16, @intCast(c.fz_count_pages(self.ctx, self.temp_doc.?)));
     if (self.current_page_number >= self.total_pages) {
         self.current_page_number = self.total_pages - 1;

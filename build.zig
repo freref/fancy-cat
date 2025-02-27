@@ -14,7 +14,8 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const prefix = b.option([]const u8, "prefix", "Installation prefix") orelse "./local";
+    const prefix = "./local";
+    const location = "./deps/mupdf/local";
 
     var make_args = std.ArrayList([]const u8).init(b.allocator);
     defer make_args.deinit();
@@ -60,7 +61,7 @@ pub fn build(b: *std.Build) void {
 
     exe.step.dependOn(&mupdf_build_step.step);
 
-    addMupdfDeps(exe, b, prefix);
+    addMupdfDeps(exe, b, location);
 
     b.installArtifact(exe);
     b.getInstallStep().dependOn(&mupdf_build_step.step);
