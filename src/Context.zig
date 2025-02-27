@@ -251,7 +251,6 @@ pub const Context = struct {
     }
 
     pub fn drawCurrentPage(self: *Self, win: vaxis.Window) !void {
-        self.pdf_handler.commitReload();
         if (self.current_page == null or self.reload_page) {
             const winsize = try vaxis.Tty.getWinsize(self.tty.fd);
             const pix_per_col = try std.math.divCeil(u16, win.screen.width_pix, win.screen.width);
