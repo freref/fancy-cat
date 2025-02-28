@@ -16,7 +16,6 @@ pub const ScrollDirection = enum { Up, Down, Left, Right };
 allocator: std.mem.Allocator,
 ctx: [*c]c.fz_context,
 doc: [*c]c.fz_document,
-temp_doc: ?[*c]c.fz_document,
 total_pages: u16,
 current_page_number: u16,
 path: []const u8,
@@ -62,7 +61,6 @@ pub fn init(
         .allocator = allocator,
         .ctx = ctx,
         .doc = doc,
-        .temp_doc = null,
         .total_pages = total_pages,
         .current_page_number = current_page_number,
         .path = path,
@@ -76,33 +74,24 @@ pub fn init(
 }
 
 pub fn deinit(self: *Self) void {
-    if (self.temp_doc) |doc| c.fz_drop_document(self.ctx, doc);
     c.fz_drop_document(self.ctx, self.doc);
     c.fz_drop_context(self.ctx);
 }
 
 pub fn reloadDocument(self: *Self) !void {
-    if (self.temp_doc) |doc| {
+    if (self.doc) |doc| {
         c.fz_drop_document(self.ctx, doc);
-        self.temp_doc = null;
+        self.doc = null;
     }
 
-    self.temp_doc = c.fz_open_document(self.ctx, self.path.ptr) orelse {
+    self.doc = c.fz_open_document(self.ctx, self.path.ptr) orelse {
         std.debug.print("Failed to reload document\n", .{});
         return PdfError.FailedToOpenDocument;
     };
 
-    self.total_pages = @as(u16, @intCast(c.fz_count_pages(self.ctx, self.temp_doc.?)));
+    self.total_pages = @as(u16, @intCast(c.fz_count_pages(self.ctx, self.doc.?)));
     if (self.current_page_number >= self.total_pages) {
         self.current_page_number = self.total_pages - 1;
-    }
-}
-
-pub fn commitReload(self: *Self) void {
-    if (self.temp_doc) |doc| {
-        c.fz_drop_document(self.ctx, self.doc);
-        self.doc = doc;
-        self.temp_doc = null;
     }
 }
 

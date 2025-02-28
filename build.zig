@@ -21,6 +21,11 @@ pub fn build(b: *std.Build) void {
     defer make_args.deinit();
 
     make_args.append("make") catch unreachable;
+
+    // use as many cores as possible by default (like zig) I dont know how to check for j<N> arg
+    const cpu_count = std.Thread.getCpuCount() catch 1;
+    make_args.append(b.fmt("-j{d}", .{cpu_count})) catch unreachable;
+
     make_args.append("-C") catch unreachable;
     make_args.append("deps/mupdf") catch unreachable;
 
