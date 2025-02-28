@@ -252,6 +252,9 @@ pub const Context = struct {
     }
 
     pub fn drawCurrentPage(self: *Self, win: vaxis.Window) !void {
+        // TODO check if we should only do this func if reload_page is true
+        // TODO check if we should ever set current page to null, I think we can just track with
+        // reload_page var
         if (self.current_page == null or self.reload_page) {
             const winsize = try vaxis.Tty.getWinsize(self.tty.fd);
             const pix_per_col = try std.math.divCeil(u16, win.screen.width_pix, win.screen.width);
@@ -322,6 +325,8 @@ pub const Context = struct {
         const win = self.vx.window();
         win.clear();
 
+        // TODO maybe check reload page here instead
+        // simplify control flow
         try self.drawCurrentPage(win);
 
         if (self.config.status_bar.enabled) {

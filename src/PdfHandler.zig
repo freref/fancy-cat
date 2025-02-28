@@ -129,12 +129,7 @@ pub fn renderPage(
     self.x_offset = c.fz_clamp(self.x_offset, -self.x_center, self.x_center);
     self.y_offset = c.fz_clamp(self.y_offset, -self.y_center, self.y_center);
 
-    const bbox = c.fz_make_irect(
-        0,
-        0,
-        @intFromFloat(view_width),
-        @intFromFloat(view_height),
-    );
+    const bbox = c.fz_make_irect(0, 0, @intFromFloat(view_width), @intFromFloat(view_height));
     const pix = c.fz_new_pixmap_with_bbox(self.ctx, c.fz_device_rgb(self.ctx), bbox, null, 0);
     defer c.fz_drop_pixmap(self.ctx, pix);
     c.fz_clear_pixmap_with_value(self.ctx, pix, 0xFF);
