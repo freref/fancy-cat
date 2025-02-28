@@ -150,6 +150,7 @@ fn parseKeyBinding(value: std.json.Value, allocator: std.mem.Allocator) !vaxis.K
     }
 
     if (vaxis.Key.name_map.get(key)) |codepoint| {
+        std.debug.print("key_value: {any}, key: {s}, codepoint: {any}\n", .{ key_value, key, codepoint });
         return vaxis.Key{
             .codepoint = codepoint,
             .mods = modifiers,

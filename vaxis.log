@@ -1,0 +1,12 @@
+Makerules:212: "No pkg-config found, install it for proper integration of libcrypto"
+key_value: json.dynamic.Value{ .string = { 99, 111, 108, 111, 110 } }, key: colon, codepoint: 58
+key_value: json.dynamic.Value{ .string = { 101, 115, 99, 97, 112, 101 } }, key: escape, codepoint: 27
+key_value: json.dynamic.Value{ .string = { 101, 110, 116, 101, 114 } }, key: enter, codepoint: 13
+info(vaxis): pixel mouse capability detected
+info(vaxis): unicode capability detected
+info(vaxis): color_scheme_updates capability detected
+info(vaxis): kitty keyboard capability detected
+info(vaxis): kitty graphics capability detected
+debug(vaxis): enabling mouse mode: pixel coordinates
+debug(vaxis): resizing screen: width=81 height=50
+debug(vaxis): resizing screen: width=81 height=50
