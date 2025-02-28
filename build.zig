@@ -10,12 +10,46 @@ fn addMupdfDeps(exe: *std.Build.Step.Compile, b: *std.Build, prefix: []const u8)
     exe.linkLibC();
 }
 
+fn addMupdfHomebrew(exe: *std.Build.Step.Compile, target: std.Target) void {
+    if (target.os.tag == .macos and target.cpu.arch == .aarch64) {
+        exe.addIncludePath(.{ .cwd_relative = "/opt/homebrew/include" });
+        exe.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" });
+    } else if (target.os.tag == .macos and target.cpu.arch == .x86_64) {
+        exe.addIncludePath(.{ .cwd_relative = "/usr/local/include" });
+        exe.addLibraryPath(.{ .cwd_relative = "/usr/local/lib" });
+    } else if (target.os.tag == .linux) {
+        exe.addIncludePath(.{ .cwd_relative = "/home/linuxbrew/.linuxbrew/include" });
+        exe.addLibraryPath(.{ .cwd_relative = "/home/linuxbrew/.linuxbrew/lib" });
+
+        const linux_libs = [_][]const u8{
+            "mupdf-third", "harfbuzz",
+            "freetype",    "jbig2dec",
+            "jpeg",        "openjp2",
+            "gumbo",       "mujs",
+        };
+        for (linux_libs) |lib| exe.linkSystemLibrary(lib);
+    }
+    exe.linkSystemLibrary("mupdf");
+    exe.linkSystemLibrary("z");
+    exe.linkLibC();
+}
+
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    var useVendorMupdf = true;
     const prefix = "./local";
     const location = "./deps/mupdf/local";
+
+    std.fs.cwd().access("./deps/mupdf/Makefile", .{}) catch |err| {
+        if (err == error.FileNotFound) {
+            useVendorMupdf = false;
+        } else {
+            std.debug.print("Error: {s}\n", .{@errorName(err)});
+            return;
+        }
+    };
 
     var make_args = std.ArrayList([]const u8).init(b.allocator);
     defer make_args.deinit();
@@ -64,12 +98,15 @@ pub fn build(b: *std.Build) void {
     exe.root_module.addImport("vaxis", deps.vaxis.module("vaxis"));
     exe.root_module.addImport("fzwatch", deps.fzwatch.module("fzwatch"));
 
-    exe.step.dependOn(&mupdf_build_step.step);
-
-    addMupdfDeps(exe, b, location);
-
-    b.installArtifact(exe);
-    b.getInstallStep().dependOn(&mupdf_build_step.step);
+    if (useVendorMupdf) {
+        exe.step.dependOn(&mupdf_build_step.step);
+        addMupdfDeps(exe, b, location);
+        b.installArtifact(exe);
+        b.getInstallStep().dependOn(&mupdf_build_step.step);
+    } else {
+        addMupdfHomebrew(exe, target.result);
+        b.installArtifact(exe);
+    }
 
     const run_cmd = b.addRunArtifact(exe);
     if (b.args) |args| run_cmd.addArgs(args);
