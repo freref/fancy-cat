@@ -28,3 +28,4 @@ target/
 src/temp-main.zig
 lima.yaml
 .vscode
+vaxis.log
