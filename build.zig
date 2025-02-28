@@ -59,6 +59,8 @@ pub fn build(b: *std.Build) void {
     exe.root_module.addImport("vaxis", deps.vaxis.module("vaxis"));
     exe.root_module.addImport("fzwatch", deps.fzwatch.module("fzwatch"));
 
+    exe.root_module.addAnonymousImport("metadata", .{ .root_source_file = b.path("build.zig.zon") });
+
     exe.step.dependOn(&mupdf_build_step.step);
 
     addMupdfDeps(exe, b, location);
