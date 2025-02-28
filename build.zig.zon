@@ -1,19 +1,19 @@
 .{
     .name = "fancy-cat",
-    .version = "0.3.0",
-    .minimum_zig_version = "0.13.0",
+    .version = "0.4.0",
+    .minimum_zig_version = "0.14.0",
     .dependencies = .{
         .vaxis = .{
-            .url = "https://github.com/freref/libvaxis/archive/b2e2588e69bb227a16ec50bdb3bedabe48b7f58a.tar.gz",
-            .hash = "122098b207673eb55bf51b9981b7b7f5c852149dac82d49d70f07c7227323f8c0617",
+            .url = "https://github.com/freref/libvaxis/archive/d409f2f168192374aa7c625f61f6fe64fdb66818.zip",
+            .hash = "1220ef263fb9e45c2725b3781d342d746313751db9cdb61e7a737dbc72c94c184dc4",
         },
         .fzwatch = .{
             .url = "https://github.com/freref/fzwatch/archive/refs/heads/master.tar.gz",
             .hash = "1220a6181ec8374f37e49914204b98ff4cc326bfca1a46594364886fe962f998c9dd",
         },
         .fastb64z = .{
-            .url = "git+https://github.com/freref/fastb64z#3bfba44545042f00cc908890a652da00dc3d7670",
-            .hash = "12206695fbabe2c3f981ea79d97afe8d4fdb7790773a4153543c63ac7e0d11e564c7",
+            .url = "https://github.com/freref/fastb64z/archive/fa3f34a4528609a8778124641b080e90d93c357a.tar.gz",
+            .hash = "1220b5a0e9aa8d4c9b0e09c41ec3a58092888e7516c05cb78b74c9be77acaebab303",
         },
     },
     .paths = .{
