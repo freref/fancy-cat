@@ -1,0 +1,56 @@
+name: Release
+on:
+  push:
+    tags:
+      - 'v*'
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: mlugg/setup-zig@v1
+        with:
+          version: 0.13.0
+      - name: Build for native architecture
+        run: zig build -Doptimize=ReleaseSmall
+      - name: Cross-compile for ARM
+        run: |
+          mkdir -p zig-out/bin/arm
+          zig build -Doptimize=ReleaseSmall -Dtarget=aarch64-linux-gnu -Dcpu=baseline
+          cp zig-out/bin/* zig-out/bin/arm/ || true
+      - name: Cross-compile for x86_64
+        run: |
+          mkdir -p zig-out/bin/x86_64
+          zig build -Doptimize=ReleaseSmall -Dtarget=x86_64-linux-gnu -Dcpu=baseline
+          cp zig-out/bin/* zig-out/bin/x86_64/ || true
+      - name: Package artifacts
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          cp -r zig-out/bin/* artifacts/
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os }}-binaries
+          path: artifacts/
+          
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: release-artifacts/**/*
+          generate_release_notes: true
