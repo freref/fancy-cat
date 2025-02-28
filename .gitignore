@@ -27,3 +27,4 @@ target/
 *.jpg
 src/temp-main.zig
 lima.yaml
+.vscode
