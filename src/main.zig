@@ -1,7 +1,7 @@
 const std = @import("std");
 const Context = @import("Context.zig").Context;
 
-pub const FANCY_CAT_VERSION = "0.3.0";
+pub const FANCY_CAT_VERSION = "0.3.1";
 
 pub fn main() !void {
     const args = try std.process.argsAlloc(std.heap.page_allocator);
