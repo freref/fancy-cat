@@ -108,6 +108,10 @@ zig build run -- <path-to-pdf> <optional-page-number>
 - ✅ Page navigation (zoom, etc.)
 - ✅ Status bar
 
+## License
+
+spdx-license-identifier: AGPL-3.0-or-later
+
 ## Contributing
 
 Contributions are welcome.

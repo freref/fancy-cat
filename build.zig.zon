@@ -1,6 +1,6 @@
 .{
     .name = "fancy-cat",
-    .version = "0.3.0",
+    .version = "0.3.1",
     .minimum_zig_version = "0.13.0",
     .dependencies = .{
         .vaxis = .{
