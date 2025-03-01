@@ -9,11 +9,13 @@ const Cache = @import("./Cache.zig");
 
 pub const panic = vaxis.panic_handler;
 
+// is there a way to merge vaxis.Event with custom events?
 const Event = union(enum) {
     key_press: vaxis.Key,
     mouse: vaxis.Mouse,
     winsize: vaxis.Winsize,
     file_changed,
+    image_exists: vaxis.EventTypes.ImageExists,
 };
 
 pub const StateType = enum { view, command };
@@ -197,6 +199,11 @@ pub const Context = struct {
                 try self.pdf_handler.reloadDocument();
                 // we could remove the current page from the cache here
                 self.reload_page = true;
+            },
+            .image_exists => |response| {
+                if (!response.exists) {
+                    // remove from cache
+                }
             },
         }
     }
