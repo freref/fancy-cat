@@ -201,8 +201,10 @@ pub const Context = struct {
                 self.reload_page = true;
             },
             .image_exists => |response| {
+                std.debug.print("Node {any} exists: {any}", .{ response.id, response.exists });
                 if (!response.exists) {
-                    // remove from cache
+                    self.cache.RemoveById(response.id);
+                    self.reload_page = true;
                 }
             },
         }
@@ -229,6 +231,9 @@ pub const Context = struct {
                 // Or go to the next page, at which point we set check_cache to true again
                 self.check_cache = false;
                 self.current_page = cached.image;
+                // idk where the best place to check the term cache is due to its async nature
+                // for now ill do it here
+                try self.vx.queryImageExists(self.tty.anyWriter(), cached.image.id);
                 return;
             }
         }

@@ -15,6 +15,7 @@ const Node = struct {
 
 allocator: std.mem.Allocator,
 map: std.AutoHashMap(Key, *Node),
+id_map: std.AutoHashMap(u32, *Node),
 head: ?*Node,
 tail: ?*Node,
 config: *Config,
@@ -25,6 +26,7 @@ pub fn init(allocator: std.mem.Allocator, config: *Config) Self {
     return .{
         .allocator = allocator,
         .map = std.AutoHashMap(Key, *Node).init(allocator),
+        .id_map = std.AutoHashMap(u32, *Node).init(allocator),
         .head = null,
         .tail = null,
         .config = config,
@@ -43,6 +45,7 @@ pub fn deinit(self: *Self) void {
         current = next;
     }
     self.map.deinit();
+    self.id_map.deinit();
 }
 
 pub fn clear(self: *Self) void {
@@ -60,6 +63,7 @@ pub fn clear(self: *Self) void {
     }
 
     self.map.clearRetainingCapacity();
+    self.id_map.clearRetainingCapacity();
     self.head = null;
     self.tail = null;
 }
@@ -89,16 +93,28 @@ pub fn put(self: *Self, key: Key, image: CachedImage) !bool {
     };
 
     try self.map.put(key, new_node);
+    try self.id_map.put(image.image.id, new_node);
     self.addToFront(new_node);
 
     if (self.map.count() > self.lru_size) {
         const tail_node = self.tail orelse unreachable;
         _ = self.map.remove(tail_node.key);
+        _ = self.id_map.remove(tail_node.value.image.id);
         self.removeNode(tail_node);
         self.allocator.destroy(tail_node);
     }
 
     return true;
+}
+
+pub fn RemoveById(self: *Self, id: u32) void {
+    const map_node = self.id_map.get(id);
+    if (map_node) |node| {
+        _ = self.map.remove(node.key);
+        _ = self.id_map.remove(node.value.image.id);
+        self.removeNode(node);
+        self.allocator.destroy(node);
+    }
 }
 
 fn addToFront(self: *Self, node: *Node) void {
