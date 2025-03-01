@@ -5,7 +5,7 @@
     .dependencies = .{
         .vaxis = .{
             .url = "https://github.com/freref/libvaxis/archive/refs/heads/main.tar.gz",
-            .hash = "1220183489aac0d8663ddcc4c5171568b667811a2a8c381561d36e3fa3fc2a1ab21b",
+            .hash = "1220b35f31ee9b0d6d94d124e8ae05f7b69f3331c04acfac0b1ee62ae8c72916dfce",
         },
         .fzwatch = .{
             .url = "https://github.com/freref/fzwatch/archive/refs/heads/master.tar.gz",

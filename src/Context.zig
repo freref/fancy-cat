@@ -15,7 +15,7 @@ const Event = union(enum) {
     mouse: vaxis.Mouse,
     winsize: vaxis.Winsize,
     file_changed,
-    image_exists: vaxis.EventTypes.ImageExists,
+    image_not_found: u32,
 };
 
 pub const StateType = enum { view, command };
@@ -200,12 +200,10 @@ pub const Context = struct {
                 // we could remove the current page from the cache here
                 self.reload_page = true;
             },
-            .image_exists => |response| {
-                std.debug.print("Node {any} exists: {any}", .{ response.id, response.exists });
-                if (!response.exists) {
-                    self.cache.RemoveById(response.id);
-                    self.reload_page = true;
-                }
+            .image_not_found => |id| {
+                std.debug.print("Image: {d} not found", .{id});
+                self.cache.RemoveById(id);
+                self.reload_page = true;
             },
         }
     }
@@ -233,7 +231,6 @@ pub const Context = struct {
                 self.current_page = cached.image;
                 // idk where the best place to check the term cache is due to its async nature
                 // for now ill do it here
-                try self.vx.queryImageExists(self.tty.anyWriter(), cached.image.id);
                 return;
             }
         }
