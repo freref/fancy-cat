@@ -206,13 +206,9 @@ pub const Context = struct {
         window_width: u32,
         window_height: u32,
     ) !void {
-        // TODO make this interchangeable with other file formats (no pdf specific logic in context)
-        const defaultPage = self.pdf_handler.zoom == 0 and
-            self.pdf_handler.x_offset == 0 and
-            self.pdf_handler.y_offset == 0 and
-            self.config.cache.enabled;
-
-        if (defaultPage and self.check_cache) {
+        // TODO make this func interchangeable with other file formats
+        // (no pdf specific logic in context)
+        if (self.config.cache.enabled and self.check_cache) {
             if (self.cache.get(.{
                 .colorize = self.config.general.colorize,
                 .page = self.pdf_handler.current_page_number,
@@ -241,13 +237,14 @@ pub const Context = struct {
             .rgb,
         );
 
-        if (!defaultPage) return;
+        if (!self.config.cache.enabled or !self.check_cache) return;
 
         if (self.current_page) |img| {
             _ = try self.cache.put(.{
                 .colorize = self.config.general.colorize,
                 .page = self.pdf_handler.current_page_number,
             }, .{ .image = img });
+            self.check_cache = false;
         }
     }
 
