@@ -27,6 +27,7 @@ Each binding requires:
   "scroll_right": { "key": "l" }, // Move viewport right
   "zoom_in": { "key": "i" }, // Increase zoom level
   "zoom_out": { "key": "o" }, // Decrease zoom level
+  "width_mode": { "key": "w" }, // Toggle width mode
   "colorize": { "key": "z" }, // Toggle color inversion
   "quit": { "key": "c", "modifiers": ["ctrl"] } // Exit program
 }
