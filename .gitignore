@@ -25,7 +25,6 @@ zig-cache/
 *.typst
 target/
 *.jpg
-src/temp-main.zig
 lima.yaml
 .vscode
-vaxis.log
+*.log
