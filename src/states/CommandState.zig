@@ -89,7 +89,6 @@ pub fn executeCommand(self: *Self, cmd: []u8) bool {
         const success = self.context.pdf_handler.goToPage(page_num);
         if (success) {
             self.context.resetCurrentPage();
-            self.context.reload_page = true;
         }
         return true;
     } else |_| {

@@ -30,7 +30,6 @@ pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
                     if (s.pdf_handler.changePage(1)) {
                         s.resetCurrentPage();
                     }
-                    s.reload_page = true;
                 }
             }.action,
         },
@@ -42,7 +41,6 @@ pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
                     if (s.pdf_handler.changePage(-1)) {
                         s.resetCurrentPage();
                     }
-                    s.reload_page = true;
                 }
             }.action,
         },

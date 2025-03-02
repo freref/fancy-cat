@@ -163,9 +163,9 @@ pub const Context = struct {
     }
 
     pub fn resetCurrentPage(self: *Self) void {
-        self.current_page = null;
         self.pdf_handler.resetZoomAndScroll();
         self.check_cache = true;
+        self.reload_page = true;
     }
 
     pub fn handleKeyStroke(self: *Self, key: vaxis.Key) !void {

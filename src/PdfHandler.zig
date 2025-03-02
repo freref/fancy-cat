@@ -243,3 +243,50 @@ pub fn goToPage(self: *Self, pageNum: u16) bool {
     }
     return false;
 }
+
+pub fn getCurrentPage(
+    self: *Self,
+    window_width: u32,
+    window_height: u32,
+) !void {
+    // TODO make this func interchangeable with other file formats
+    // (no pdf specific logic in context)
+    if (self.config.cache.enabled and self.check_cache) {
+        if (self.cache.get(.{
+            .colorize = self.config.general.colorize,
+            .page = self.pdf_handler.current_page_number,
+        })) |cached| {
+            // Once we get the cached image we don't need to check the cache anymore because
+            // The only actions a user can take is zoom or scrolling, but we don't cache those
+            // Or go to the next page, at which point we set check_cache to true again
+            self.check_cache = false;
+            self.current_page = cached.image;
+            return;
+        }
+    }
+
+    const image = try self.pdf_handler.renderPage(
+        self.pdf_handler.current_page_number,
+        window_width,
+        window_height,
+    );
+    defer self.allocator.free(image.base64);
+
+    self.current_page = try self.vx.transmitPreEncodedImage(
+        self.tty.anyWriter(),
+        image.base64,
+        image.width,
+        image.height,
+        .rgb,
+    );
+
+    if (!self.config.cache.enabled or !self.check_cache) return;
+
+    if (self.current_page) |img| {
+        _ = try self.cache.put(.{
+            .colorize = self.config.general.colorize,
+            .page = self.pdf_handler.current_page_number,
+        }, .{ .image = img });
+        self.check_cache = false;
+    }
+}
