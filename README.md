@@ -57,13 +57,7 @@ Available as a Nix package [here](https://github.com/freref/fancy-cat-nix).
 git submodule update --init --recursive
 ```
 
-2. Fetch dependencies:
-
-```sh
-zig build --fetch
-```
-
-3. Build the project:
+2. Build the project:
 
 ```sh
 zig build --release=small
@@ -76,7 +70,7 @@ zig build --release=small
 > zig build -Dcpu="skylake" --release=small
 > ```
 
-4. Install:
+3. Install:
 
 ```sh
 # Add to your PATH
