@@ -51,7 +51,7 @@ pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
             .mods = km.zoom_in.mods,
             .handler = struct {
                 fn action(s: *Context) void {
-                    s.pdf_handler.adjustZoom(true);
+                    s.pdf_handler.zoomIn();
                     s.reload_page = true;
                 }
             }.action,
@@ -61,7 +61,7 @@ pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
             .mods = km.zoom_out.mods,
             .handler = struct {
                 fn action(s: *Context) void {
-                    s.pdf_handler.adjustZoom(false);
+                    s.pdf_handler.zoomOut();
                     s.reload_page = true;
                 }
             }.action,

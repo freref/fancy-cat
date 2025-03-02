@@ -20,6 +20,7 @@ total_pages: u16,
 current_page_number: u16,
 path: []const u8,
 zoom: f32,
+width_mode: bool,
 y_offset: f32,
 x_offset: f32,
 y_center: f32,
@@ -65,6 +66,7 @@ pub fn init(
         .current_page_number = current_page_number,
         .path = path,
         .zoom = 0,
+        .width_mode = false,
         .y_offset = 0,
         .x_offset = 0,
         .y_center = 0,
@@ -178,12 +180,12 @@ pub fn changePage(self: *Self, delta: i32) bool {
     return false;
 }
 
-pub fn adjustZoom(self: *Self, increase: bool) void {
-    if (increase) {
-        self.zoom *= (self.config.general.zoom_step + 1);
-    } else {
-        self.zoom /= (self.config.general.zoom_step + 1);
-    }
+pub fn zoomIn(self: *Self) void {
+    self.zoom *= self.config.general.zoom_step;
+}
+
+pub fn zoomOut(self: *Self) void {
+    self.zoom /= self.config.general.zoom_step;
 }
 
 pub fn toggleColor(self: *Self) void {
