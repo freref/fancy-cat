@@ -40,6 +40,7 @@ The package is available in the following repositories:
     <img src="https://repology.org/badge/vertical-allrepos/fancy-cat.svg?columns=3&header=fancy-cat" alt="Packaging status">
   </a>
 </p>
+
 ### Nix
 
 Available as a Nix package [here](https://github.com/freref/fancy-cat-nix).
