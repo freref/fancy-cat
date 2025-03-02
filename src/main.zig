@@ -4,6 +4,9 @@ const Context = @import("Context.zig").Context;
 // Types for build.zig.zon
 // For now metadata is only used in main.zig, but can move it to types.zig if needed eleswhere
 // This wont be necessary once https://github.com/ziglang/zig/pull/22907 is merged
+
+const PackageName = enum { fancy_cat };
+
 const DependencyType = struct {
     url: []const u8,
     hash: []const u8,
@@ -16,7 +19,8 @@ const DependenciesType = struct {
 };
 
 const MetadataType = struct {
-    name: []const u8,
+    name: PackageName,
+    fingerprint: u64,
     version: []const u8,
     minimum_zig_version: []const u8,
     dependencies: DependenciesType,
