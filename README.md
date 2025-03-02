@@ -34,13 +34,9 @@ The default `config.json` can be found [here](./src/config/config.json) and docu
 
 ## Installation
 
-### Arch Linux
+The package is available in the following repositories:
 
-fancy-cat is available as a package in the AUR ([link](https://aur.archlinux.org/packages/fancy-cat)). You can install it using an AUR helper (e.g., paru):
-
-```sh
-paru -S fancy-cat
-```
+[![Packaging status](https://repology.org/badge/tiny-repos/fancy-cat.svg)](https://repology.org/project/fancy-cat/versions)
 
 ### Nix
 
@@ -110,7 +106,7 @@ zig build run -- <path-to-pdf> <optional-page-number>
 
 ## License
 
-spdx-license-identifier: AGPL-3.0-or-later
+(AGPL-3.0-or-later)[https://spdx.org/licenses/AGPL-3.0-or-later.html]
 
 ## Contributing
 
