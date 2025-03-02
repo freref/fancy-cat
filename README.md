@@ -35,10 +35,11 @@ The default `config.json` can be found [here](./src/config/config.json) and docu
 ## Installation
 
 The package is available in the following repositories:
-
 <p align="center">
-  [![Packaging status](https://repology.org/badge/vertical-allrepos/fancy-cat.svg?columns=3&header=fancy-cat)](https://repology.org/project/fancy-cat/versions)
-<p>
+  <a href="https://repology.org/project/fancy-cat/versions">
+    <img src="https://repology.org/badge/vertical-allrepos/fancy-cat.svg?columns=3&header=fancy-cat" alt="Packaging status">
+  </a>
+</p>
 ### Nix
 
 Available as a Nix package [here](https://github.com/freref/fancy-cat-nix).
