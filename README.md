@@ -100,7 +100,7 @@ zig build run -- <path-to-pdf> <optional-page-number>
 
 ## License
 
-(AGPL-3.0-or-later)[https://spdx.org/licenses/AGPL-3.0-or-later.html]
+[AGPL-3.0-or-later](https://spdx.org/licenses/AGPL-3.0-or-later.html)
 
 ## Contributing
 
