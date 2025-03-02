@@ -189,6 +189,7 @@ pub const Context = struct {
             .mouse => |mouse| self.mouse = mouse,
             .winsize => |ws| {
                 try self.vx.resize(self.allocator, self.tty.anyWriter(), ws);
+                self.pdf_handler.default_zoom = 0;
                 self.pdf_handler.resetZoomAndScroll();
                 self.cache.clear();
                 self.reload_page = true;
