@@ -36,7 +36,7 @@ pub const Context = struct {
     current_state: State,
     reload_page: bool,
     cache: Cache,
-    check_cache: bool,
+    should_check_cache: bool,
 
     pub fn init(allocator: std.mem.Allocator, args: [][:0]u8) !Self {
         const path = args[1];
@@ -76,7 +76,7 @@ pub const Context = struct {
             .current_state = undefined,
             .reload_page = false,
             .cache = Cache.init(allocator, config),
-            .check_cache = true,
+            .should_check_cache = config.cache.enabled,
         };
     }
 
@@ -164,7 +164,7 @@ pub const Context = struct {
 
     pub fn resetCurrentPage(self: *Self) void {
         self.pdf_handler.resetZoomAndScroll();
-        self.check_cache = true;
+        self.should_check_cache = self.config.cache.enabled;
         self.reload_page = true;
     }
 
@@ -208,7 +208,7 @@ pub const Context = struct {
     ) !void {
         // TODO make this func interchangeable with other file formats
         // (no pdf specific logic in context)
-        if (self.config.cache.enabled and self.check_cache) {
+        if (self.should_check_cache) {
             if (self.cache.get(.{
                 .colorize = self.config.general.colorize,
                 .page = self.pdf_handler.current_page_number,
@@ -216,7 +216,7 @@ pub const Context = struct {
                 // Once we get the cached image we don't need to check the cache anymore because
                 // The only actions a user can take is zoom or scrolling, but we don't cache those
                 // Or go to the next page, at which point we set check_cache to true again
-                self.check_cache = false;
+                self.should_check_cache = false;
                 self.current_page = cached.image;
                 return;
             }
@@ -237,14 +237,14 @@ pub const Context = struct {
             .rgb,
         );
 
-        if (!self.config.cache.enabled or !self.check_cache) return;
+        if (!self.should_check_cache) return;
 
         if (self.current_page) |img| {
             _ = try self.cache.put(.{
                 .colorize = self.config.general.colorize,
                 .page = self.pdf_handler.current_page_number,
             }, .{ .image = img });
-            self.check_cache = false;
+            self.should_check_cache = false;
         }
     }
 
