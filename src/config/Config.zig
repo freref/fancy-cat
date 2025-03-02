@@ -13,6 +13,7 @@ pub const KeyMap = struct {
     scroll_right: vaxis.Key = .{ .codepoint = 'l', .mods = .{} },
     zoom_in: vaxis.Key = .{ .codepoint = 'i', .mods = .{} },
     zoom_out: vaxis.Key = .{ .codepoint = 'o', .mods = .{} },
+    width_mode: vaxis.Key = .{ .codepoint = 'w', .mods = .{} },
     colorize: vaxis.Key = .{ .codepoint = 'z', .mods = .{} },
     quit: vaxis.Key = .{ .codepoint = 'c', .mods = .{ .ctrl = true } },
     enter_command_mode: vaxis.Key = .{ .codepoint = ':', .mods = .{} },
@@ -33,9 +34,9 @@ pub const General = struct {
     black: i32 = 0xffffff,
     // size of the pdf
     // 1 is the whole screen
-    size: f32 = 0.90,
+    size: f32 = 1.0,
     // percentage
-    zoom_step: f32 = 0.25,
+    zoom_step: f32 = 1.25,
     zoom_min: f32 = 1.0,
     // pixels
     scroll_step: f32 = 100.0,
@@ -68,7 +69,7 @@ pub fn init(allocator: std.mem.Allocator) !Self {
     const home = try std.process.getEnvVarOwned(allocator, "HOME");
     defer if (home.len != 1) allocator.free(home);
 
-    var config_path_buf: [std.fs.MAX_PATH_BYTES]u8 = undefined;
+    var config_path_buf: [std.fs.max_path_bytes]u8 = undefined;
     const config_dir = try std.fmt.bufPrint(&config_path_buf, "{s}/.config/fancy-cat", .{home});
 
     std.fs.makeDirAbsolute(config_dir) catch |err| {
@@ -150,6 +151,7 @@ fn parseKeyBinding(value: std.json.Value, allocator: std.mem.Allocator) !vaxis.K
     }
 
     if (vaxis.Key.name_map.get(key)) |codepoint| {
+        std.debug.print("key_value: {any}, key: {s}, codepoint: {any}\n", .{ key_value, key, codepoint });
         return vaxis.Key{
             .codepoint = codepoint,
             .mods = modifiers,
@@ -199,13 +201,13 @@ fn parseGeneral(value: std.json.Value, allocator: std.mem.Allocator) !General {
         .size = try std.json.innerParseFromValue(
             f32,
             allocator,
-            obj.get("size") orelse .{ .float = 0.90 },
+            obj.get("size") orelse .{ .float = 1.0 },
             .{},
         ),
         .zoom_step = try std.json.innerParseFromValue(
             f32,
             allocator,
-            obj.get("zoom_step") orelse .{ .float = 0.25 },
+            obj.get("zoom_step") orelse .{ .float = 1.25 },
             .{},
         ),
         .zoom_min = try std.json.innerParseFromValue(
@@ -241,7 +243,7 @@ fn parseStatusBar(value: std.json.Value, allocator: std.mem.Allocator) !StatusBa
         const bg_rgb = bg.get("rgb").?.array;
         const fg_rgb = fg.get("rgb").?.array;
 
-        const style = .{
+        const style: vaxis.Cell.Style = .{
             .bg = .{ .rgb = .{
                 try std.json.innerParseFromValue(u8, allocator, bg_rgb.items[0], .{}),
                 try std.json.innerParseFromValue(u8, allocator, bg_rgb.items[1], .{}),

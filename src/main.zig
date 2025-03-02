@@ -1,7 +1,33 @@
 const std = @import("std");
 const Context = @import("Context.zig").Context;
 
-pub const FANCY_CAT_VERSION = "0.3.1";
+// Types for build.zig.zon
+// For now metadata is only used in main.zig, but can move it to types.zig if needed eleswhere
+// This wont be necessary once https://github.com/ziglang/zig/pull/22907 is merged
+
+const PackageName = enum { fancy_cat };
+
+const DependencyType = struct {
+    url: []const u8,
+    hash: []const u8,
+};
+
+const DependenciesType = struct {
+    vaxis: DependencyType,
+    fzwatch: DependencyType,
+    fastb64z: DependencyType,
+};
+
+const MetadataType = struct {
+    name: PackageName,
+    fingerprint: u64,
+    version: []const u8,
+    minimum_zig_version: []const u8,
+    dependencies: DependenciesType,
+    paths: []const []const u8,
+};
+
+const metadata: MetadataType = @import("metadata");
 
 pub fn main() !void {
     const args = try std.process.argsAlloc(std.heap.page_allocator);
@@ -9,7 +35,7 @@ pub fn main() !void {
 
     if (args.len == 2 and (std.mem.eql(u8, args[1], "--version") or std.mem.eql(u8, args[1], "-v"))) {
         const stdout = std.io.getStdOut().writer();
-        try stdout.print("fancy-cat version {s}\n", .{FANCY_CAT_VERSION});
+        try stdout.print("fancy-cat version {s}\n", .{metadata.version});
         return;
     }
 

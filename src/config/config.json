@@ -8,6 +8,7 @@
     "scroll_right": { "key": "l", "modifiers": [] },
     "zoom_in": { "key": "i", "modifiers": [] },
     "zoom_out": { "key": "o", "modifiers": [] },
+    "width_mode": { "key": "w", "modifiers": [] },
     "colorize": { "key": "z", "modifiers": [] },
     "quit": { "key": "c", "modifiers": ["ctrl"] },
     "enter_command_mode": { "key": "colon", "modifiers": [] },
@@ -22,8 +23,8 @@
     "colorize": false,
     "white": "0x000000",
     "black": "0xffffff",
-    "size": 0.9,
-    "zoom_step": 0.25,
+    "size": 1.0,
+    "zoom_step": 1.25,
     "zoom_min": 1.0,
     "scroll_step": 100.0
   },

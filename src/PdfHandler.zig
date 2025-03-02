@@ -19,7 +19,9 @@ doc: [*c]c.fz_document,
 total_pages: u16,
 current_page_number: u16,
 path: []const u8,
-zoom: f32,
+active_zoom: f32,
+default_zoom: f32,
+width_mode: bool,
 y_offset: f32,
 x_offset: f32,
 y_center: f32,
@@ -64,7 +66,9 @@ pub fn init(
         .total_pages = total_pages,
         .current_page_number = current_page_number,
         .path = path,
-        .zoom = 0,
+        .active_zoom = 0,
+        .default_zoom = 0,
+        .width_mode = false,
         .y_offset = 0,
         .x_offset = 0,
         .y_center = 0,
@@ -95,6 +99,43 @@ pub fn reloadDocument(self: *Self) !void {
     }
 }
 
+fn calculateZoomLevel(self: *Self, window_width: u32, window_height: u32, bound: c.fz_rect) void {
+    var scale: f32 = 0;
+    if (self.width_mode) {
+        scale = @as(f32, @floatFromInt(window_width)) / bound.x1;
+    } else {
+        scale = @min(
+            @as(f32, @floatFromInt(window_width)) / bound.x1,
+            @as(f32, @floatFromInt(window_height)) / bound.y1,
+        );
+    }
+
+    // initial zoom
+    if (self.default_zoom == 0) {
+        self.default_zoom = scale * self.config.general.size;
+    }
+
+    if (self.active_zoom == 0) {
+        self.active_zoom = self.default_zoom;
+    }
+
+    self.active_zoom = @max(self.active_zoom, self.config.general.zoom_min);
+}
+
+fn calculateXY(self: *Self, view_width: f32, view_height: f32, bound: c.fz_rect) void {
+    // translation to center view
+    self.x_center = (bound.x1 - view_width / self.active_zoom) / 2;
+    self.y_center = (bound.y1 - view_height / self.active_zoom) / 2;
+
+    if (self.x_offset == 0 and self.y_offset == 0 and self.width_mode) {
+        self.y_offset = self.y_center;
+    }
+
+    // don't scroll off page
+    self.x_offset = c.fz_clamp(self.x_offset, -self.x_center, self.x_center);
+    self.y_offset = c.fz_clamp(self.y_offset, -self.y_center, self.y_center);
+}
+
 pub fn renderPage(
     self: *Self,
     page_number: u16,
@@ -105,29 +146,19 @@ pub fn renderPage(
     defer c.fz_drop_page(self.ctx, page);
     const bound = c.fz_bound_page(self.ctx, page);
 
-    const scale: f32 = @min(
-        @as(f32, @floatFromInt(window_width)) / bound.x1,
-        @as(f32, @floatFromInt(window_height)) / bound.y1,
-    );
-
-    // initial zoom
-    if (self.zoom == 0) {
-        self.zoom = scale * self.config.general.size;
-    }
-
-    self.zoom = @max(self.zoom, self.config.general.zoom_min);
+    self.calculateZoomLevel(window_width, window_height, bound);
 
     // document view
-    const view_width = @max(1, @min(self.zoom * bound.x1, @as(f32, @floatFromInt(window_width))));
-    const view_height = @max(1, @min(self.zoom * bound.y1, @as(f32, @floatFromInt(window_height))));
+    const view_width = @max(1, @min(
+        self.active_zoom * bound.x1,
+        @as(f32, @floatFromInt(window_width)),
+    ));
+    const view_height = @max(1, @min(
+        self.active_zoom * bound.y1,
+        @as(f32, @floatFromInt(window_height)),
+    ));
 
-    // translation to center view
-    self.x_center = (bound.x1 - view_width / self.zoom) / 2;
-    self.y_center = (bound.y1 - view_height / self.zoom) / 2;
-
-    // don't scroll off page
-    self.x_offset = c.fz_clamp(self.x_offset, -self.x_center, self.x_center);
-    self.y_offset = c.fz_clamp(self.y_offset, -self.y_center, self.y_center);
+    self.calculateXY(view_width, view_height, bound);
 
     const bbox = c.fz_make_irect(
         0,
@@ -139,7 +170,7 @@ pub fn renderPage(
     defer c.fz_drop_pixmap(self.ctx, pix);
     c.fz_clear_pixmap_with_value(self.ctx, pix, 0xFF);
 
-    var ctm = c.fz_scale(self.zoom, self.zoom);
+    var ctm = c.fz_scale(self.active_zoom, self.active_zoom);
     ctm = c.fz_pre_translate(ctm, self.x_offset - self.x_center, self.y_offset - self.y_center);
 
     const dev = c.fz_new_draw_device(self.ctx, ctm, pix);
@@ -178,12 +209,12 @@ pub fn changePage(self: *Self, delta: i32) bool {
     return false;
 }
 
-pub fn adjustZoom(self: *Self, increase: bool) void {
-    if (increase) {
-        self.zoom *= (self.config.general.zoom_step + 1);
-    } else {
-        self.zoom /= (self.config.general.zoom_step + 1);
-    }
+pub fn zoomIn(self: *Self) void {
+    self.active_zoom *= self.config.general.zoom_step;
+}
+
+pub fn zoomOut(self: *Self) void {
+    self.active_zoom /= self.config.general.zoom_step;
 }
 
 pub fn toggleColor(self: *Self) void {
@@ -191,7 +222,7 @@ pub fn toggleColor(self: *Self) void {
 }
 
 pub fn scroll(self: *Self, direction: ScrollDirection) void {
-    const step = self.config.general.scroll_step / self.zoom;
+    const step = self.config.general.scroll_step / self.active_zoom;
     switch (direction) {
         .Up => {
             const translation = self.y_offset + step;
@@ -229,7 +260,7 @@ pub fn scroll(self: *Self, direction: ScrollDirection) void {
 }
 
 pub fn resetZoomAndScroll(self: *Self) void {
-    self.zoom = 0;
+    self.active_zoom = self.default_zoom;
     self.y_offset = 0;
     self.x_offset = 0;
 }
@@ -240,4 +271,10 @@ pub fn goToPage(self: *Self, pageNum: u16) bool {
         return true;
     }
     return false;
+}
+
+pub fn toggleWidthMode(self: *Self) void {
+    self.default_zoom = 0;
+    self.active_zoom = 0;
+    self.width_mode = !self.width_mode;
 }

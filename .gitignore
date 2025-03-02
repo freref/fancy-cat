@@ -26,4 +26,5 @@ zig-cache/
 target/
 *.jpg
 lima.yaml
+.vscode
 *.log

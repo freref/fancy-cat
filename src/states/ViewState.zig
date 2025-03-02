@@ -30,7 +30,6 @@ pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
                     if (s.pdf_handler.changePage(1)) {
                         s.resetCurrentPage();
                     }
-                    s.reload_page = true;
                 }
             }.action,
         },
@@ -42,7 +41,6 @@ pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
                     if (s.pdf_handler.changePage(-1)) {
                         s.resetCurrentPage();
                     }
-                    s.reload_page = true;
                 }
             }.action,
         },
@@ -51,7 +49,7 @@ pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
             .mods = km.zoom_in.mods,
             .handler = struct {
                 fn action(s: *Context) void {
-                    s.pdf_handler.adjustZoom(true);
+                    s.pdf_handler.zoomIn();
                     s.reload_page = true;
                 }
             }.action,
@@ -61,7 +59,17 @@ pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
             .mods = km.zoom_out.mods,
             .handler = struct {
                 fn action(s: *Context) void {
-                    s.pdf_handler.adjustZoom(false);
+                    s.pdf_handler.zoomOut();
+                    s.reload_page = true;
+                }
+            }.action,
+        },
+        .{
+            .codepoint = km.width_mode.codepoint,
+            .mods = km.width_mode.mods,
+            .handler = struct {
+                fn action(s: *Context) void {
+                    s.pdf_handler.toggleWidthMode();
                     s.reload_page = true;
                 }
             }.action,
