@@ -74,7 +74,7 @@ pub const Context = struct {
             .watcher_thread = null,
             .config = config,
             .current_state = undefined,
-            .reload_page = false,
+            .reload_page = true,
             .cache = Cache.init(allocator, config),
             .should_check_cache = config.cache.enabled,
         };
@@ -201,13 +201,13 @@ pub const Context = struct {
         }
     }
 
+    // TODO make this func interchangeable with other file formats
+    // (no pdf specific logic in context)
     pub fn getCurrentPage(
         self: *Self,
         window_width: u32,
         window_height: u32,
     ) !void {
-        // TODO make this func interchangeable with other file formats
-        // (no pdf specific logic in context)
         if (self.should_check_cache) {
             if (self.cache.get(.{
                 .colorize = self.config.general.colorize,
@@ -249,7 +249,7 @@ pub const Context = struct {
     }
 
     pub fn drawCurrentPage(self: *Self, win: vaxis.Window) !void {
-        if (self.current_page == null or self.reload_page) {
+        if (self.reload_page) {
             const winsize = try vaxis.Tty.getWinsize(self.tty.fd);
             const pix_per_col = try std.math.divCeil(u16, win.screen.width_pix, win.screen.width);
             const pix_per_row = try std.math.divCeil(u16, win.screen.height_pix, win.screen.height);

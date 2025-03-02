@@ -19,7 +19,8 @@ doc: [*c]c.fz_document,
 total_pages: u16,
 current_page_number: u16,
 path: []const u8,
-zoom: f32,
+active_zoom: f32,
+default_zoom: f32,
 width_mode: bool,
 y_offset: f32,
 x_offset: f32,
@@ -65,7 +66,8 @@ pub fn init(
         .total_pages = total_pages,
         .current_page_number = current_page_number,
         .path = path,
-        .zoom = 0,
+        .active_zoom = 0,
+        .default_zoom = 0,
         .width_mode = false,
         .y_offset = 0,
         .x_offset = 0,
@@ -113,19 +115,23 @@ pub fn renderPage(
     );
 
     // initial zoom
-    if (self.zoom == 0) {
-        self.zoom = scale * self.config.general.size;
+    if (self.default_zoom == 0) {
+        self.default_zoom = scale * self.config.general.size;
     }
 
-    self.zoom = @max(self.zoom, self.config.general.zoom_min);
+    if (self.active_zoom == 0) {
+        self.active_zoom = self.default_zoom;
+    }
+
+    self.active_zoom = @max(self.active_zoom, self.config.general.zoom_min);
 
     // document view
-    const view_width = @max(1, @min(self.zoom * bound.x1, @as(f32, @floatFromInt(window_width))));
-    const view_height = @max(1, @min(self.zoom * bound.y1, @as(f32, @floatFromInt(window_height))));
+    const view_width = @max(1, @min(self.active_zoom * bound.x1, @as(f32, @floatFromInt(window_width))));
+    const view_height = @max(1, @min(self.active_zoom * bound.y1, @as(f32, @floatFromInt(window_height))));
 
     // translation to center view
-    self.x_center = (bound.x1 - view_width / self.zoom) / 2;
-    self.y_center = (bound.y1 - view_height / self.zoom) / 2;
+    self.x_center = (bound.x1 - view_width / self.active_zoom) / 2;
+    self.y_center = (bound.y1 - view_height / self.active_zoom) / 2;
 
     // don't scroll off page
     self.x_offset = c.fz_clamp(self.x_offset, -self.x_center, self.x_center);
@@ -141,7 +147,7 @@ pub fn renderPage(
     defer c.fz_drop_pixmap(self.ctx, pix);
     c.fz_clear_pixmap_with_value(self.ctx, pix, 0xFF);
 
-    var ctm = c.fz_scale(self.zoom, self.zoom);
+    var ctm = c.fz_scale(self.active_zoom, self.active_zoom);
     ctm = c.fz_pre_translate(ctm, self.x_offset - self.x_center, self.y_offset - self.y_center);
 
     const dev = c.fz_new_draw_device(self.ctx, ctm, pix);
@@ -181,11 +187,11 @@ pub fn changePage(self: *Self, delta: i32) bool {
 }
 
 pub fn zoomIn(self: *Self) void {
-    self.zoom *= self.config.general.zoom_step;
+    self.active_zoom *= self.config.general.zoom_step;
 }
 
 pub fn zoomOut(self: *Self) void {
-    self.zoom /= self.config.general.zoom_step;
+    self.active_zoom /= self.config.general.zoom_step;
 }
 
 pub fn toggleColor(self: *Self) void {
@@ -193,7 +199,7 @@ pub fn toggleColor(self: *Self) void {
 }
 
 pub fn scroll(self: *Self, direction: ScrollDirection) void {
-    const step = self.config.general.scroll_step / self.zoom;
+    const step = self.config.general.scroll_step / self.active_zoom;
     switch (direction) {
         .Up => {
             const translation = self.y_offset + step;
@@ -231,7 +237,7 @@ pub fn scroll(self: *Self, direction: ScrollDirection) void {
 }
 
 pub fn resetZoomAndScroll(self: *Self) void {
-    self.zoom = 0;
+    self.active_zoom = self.default_zoom;
     self.y_offset = 0;
     self.x_offset = 0;
 }
@@ -242,51 +248,4 @@ pub fn goToPage(self: *Self, pageNum: u16) bool {
         return true;
     }
     return false;
-}
-
-pub fn getCurrentPage(
-    self: *Self,
-    window_width: u32,
-    window_height: u32,
-) !void {
-    // TODO make this func interchangeable with other file formats
-    // (no pdf specific logic in context)
-    if (self.config.cache.enabled and self.check_cache) {
-        if (self.cache.get(.{
-            .colorize = self.config.general.colorize,
-            .page = self.pdf_handler.current_page_number,
-        })) |cached| {
-            // Once we get the cached image we don't need to check the cache anymore because
-            // The only actions a user can take is zoom or scrolling, but we don't cache those
-            // Or go to the next page, at which point we set check_cache to true again
-            self.check_cache = false;
-            self.current_page = cached.image;
-            return;
-        }
-    }
-
-    const image = try self.pdf_handler.renderPage(
-        self.pdf_handler.current_page_number,
-        window_width,
-        window_height,
-    );
-    defer self.allocator.free(image.base64);
-
-    self.current_page = try self.vx.transmitPreEncodedImage(
-        self.tty.anyWriter(),
-        image.base64,
-        image.width,
-        image.height,
-        .rgb,
-    );
-
-    if (!self.config.cache.enabled or !self.check_cache) return;
-
-    if (self.current_page) |img| {
-        _ = try self.cache.put(.{
-            .colorize = self.config.general.colorize,
-            .page = self.pdf_handler.current_page_number,
-        }, .{ .image = img });
-        self.check_cache = false;
-    }
 }
