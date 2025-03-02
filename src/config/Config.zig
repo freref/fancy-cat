@@ -34,7 +34,7 @@ pub const General = struct {
     black: i32 = 0xffffff,
     // size of the pdf
     // 1 is the whole screen
-    size: f32 = 0.90,
+    size: f32 = 1.0,
     // percentage
     zoom_step: f32 = 1.25,
     zoom_min: f32 = 1.0,
@@ -201,7 +201,7 @@ fn parseGeneral(value: std.json.Value, allocator: std.mem.Allocator) !General {
         .size = try std.json.innerParseFromValue(
             f32,
             allocator,
-            obj.get("size") orelse .{ .float = 0.90 },
+            obj.get("size") orelse .{ .float = 1.0 },
             .{},
         ),
         .zoom_step = try std.json.innerParseFromValue(
