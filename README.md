@@ -95,7 +95,7 @@ zig build run -- <path-to-pdf> <optional-page-number>
 - ✅ Modal interface
 - ✅ Commands
 - ✅ Colorize mode (dark-mode)
-- ✅ Page navigation (zoom, etc.)
+- ✅ Page navigation
 - ✅ Status bar
 
 ## License
