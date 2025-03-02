@@ -13,6 +13,7 @@ pub const KeyMap = struct {
     scroll_right: vaxis.Key = .{ .codepoint = 'l', .mods = .{} },
     zoom_in: vaxis.Key = .{ .codepoint = 'i', .mods = .{} },
     zoom_out: vaxis.Key = .{ .codepoint = 'o', .mods = .{} },
+    width_mode: vaxis.Key = .{ .codepoint = 'w', .mods = .{} },
     colorize: vaxis.Key = .{ .codepoint = 'z', .mods = .{} },
     quit: vaxis.Key = .{ .codepoint = 'c', .mods = .{ .ctrl = true } },
     enter_command_mode: vaxis.Key = .{ .codepoint = ':', .mods = .{} },

@@ -99,20 +99,16 @@ pub fn reloadDocument(self: *Self) !void {
     }
 }
 
-pub fn renderPage(
-    self: *Self,
-    page_number: u16,
-    window_width: u32,
-    window_height: u32,
-) !EncodedImage {
-    const page = c.fz_load_page(self.ctx, self.doc, page_number);
-    defer c.fz_drop_page(self.ctx, page);
-    const bound = c.fz_bound_page(self.ctx, page);
-
-    const scale: f32 = @min(
-        @as(f32, @floatFromInt(window_width)) / bound.x1,
-        @as(f32, @floatFromInt(window_height)) / bound.y1,
-    );
+fn calculateZoomLevel(self: *Self, window_width: u32, window_height: u32, bound: c.fz_rect) void {
+    var scale: f32 = 0;
+    if (self.width_mode) {
+        scale = @as(f32, @floatFromInt(window_width)) / bound.x1;
+    } else {
+        scale = @min(
+            @as(f32, @floatFromInt(window_width)) / bound.x1,
+            @as(f32, @floatFromInt(window_height)) / bound.y1,
+        );
+    }
 
     // initial zoom
     if (self.default_zoom == 0) {
@@ -124,18 +120,45 @@ pub fn renderPage(
     }
 
     self.active_zoom = @max(self.active_zoom, self.config.general.zoom_min);
+}
 
-    // document view
-    const view_width = @max(1, @min(self.active_zoom * bound.x1, @as(f32, @floatFromInt(window_width))));
-    const view_height = @max(1, @min(self.active_zoom * bound.y1, @as(f32, @floatFromInt(window_height))));
-
+fn calculateXY(self: *Self, view_width: f32, view_height: f32, bound: c.fz_rect) void {
     // translation to center view
     self.x_center = (bound.x1 - view_width / self.active_zoom) / 2;
     self.y_center = (bound.y1 - view_height / self.active_zoom) / 2;
 
+    if (self.x_offset == 0 and self.y_offset == 0 and self.width_mode) {
+        self.y_offset = self.y_center;
+    }
+
     // don't scroll off page
     self.x_offset = c.fz_clamp(self.x_offset, -self.x_center, self.x_center);
     self.y_offset = c.fz_clamp(self.y_offset, -self.y_center, self.y_center);
+}
+
+pub fn renderPage(
+    self: *Self,
+    page_number: u16,
+    window_width: u32,
+    window_height: u32,
+) !EncodedImage {
+    const page = c.fz_load_page(self.ctx, self.doc, page_number);
+    defer c.fz_drop_page(self.ctx, page);
+    const bound = c.fz_bound_page(self.ctx, page);
+
+    self.calculateZoomLevel(window_width, window_height, bound);
+
+    // document view
+    const view_width = @max(1, @min(
+        self.active_zoom * bound.x1,
+        @as(f32, @floatFromInt(window_width)),
+    ));
+    const view_height = @max(1, @min(
+        self.active_zoom * bound.y1,
+        @as(f32, @floatFromInt(window_height)),
+    ));
+
+    self.calculateXY(view_width, view_height, bound);
 
     const bbox = c.fz_make_irect(
         0,
@@ -248,4 +271,10 @@ pub fn goToPage(self: *Self, pageNum: u16) bool {
         return true;
     }
     return false;
+}
+
+pub fn toggleWidthMode(self: *Self) void {
+    self.default_zoom = 0;
+    self.active_zoom = 0;
+    self.width_mode = !self.width_mode;
 }

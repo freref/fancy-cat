@@ -65,6 +65,16 @@ pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
             }.action,
         },
         .{
+            .codepoint = km.width_mode.codepoint,
+            .mods = km.width_mode.mods,
+            .handler = struct {
+                fn action(s: *Context) void {
+                    s.pdf_handler.toggleWidthMode();
+                    s.reload_page = true;
+                }
+            }.action,
+        },
+        .{
             .codepoint = km.scroll_up.codepoint,
             .mods = km.scroll_up.mods,
             .handler = struct {
