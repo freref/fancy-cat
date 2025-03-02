@@ -34,7 +34,7 @@ The default `config.json` can be found [here](./src/config/config.json) and docu
 
 ## Installation
 
-The package is available in the following repositories:
+`fancy-cat` is available in the following repositories:
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/fancy-cat.svg?columns=3&header=fancy-cat)](https://repology.org/project/fancy-cat/versions)
 
