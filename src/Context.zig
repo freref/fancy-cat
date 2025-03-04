@@ -14,6 +14,7 @@ const Event = union(enum) {
     mouse: vaxis.Mouse,
     winsize: vaxis.Winsize,
     file_changed,
+    should_rerender,
 };
 
 pub const StateType = enum { view, command };
@@ -36,6 +37,7 @@ pub const Context = struct {
     mutex: std.Thread.Mutex,
     condition: std.Thread.Condition,
     signal_render: bool,
+    render_page: u16,
     window_width: u32,
     window_height: u32,
     config: *Config,
@@ -43,6 +45,7 @@ pub const Context = struct {
     reload_page: bool,
     cache: Cache,
     should_check_cache: bool,
+    loop: ?vaxis.Loop(Event),
 
     pub fn init(allocator: std.mem.Allocator, args: [][:0]u8) !Self {
         const path = args[1];
@@ -84,11 +87,13 @@ pub const Context = struct {
             .signal_render = false,
             .window_width = 0,
             .window_height = 0,
+            .render_page = 0,
             .config = config,
             .current_state = undefined,
             .reload_page = true,
             .cache = Cache.init(allocator, config),
             .should_check_cache = config.cache.enabled,
+            .loop = null,
         };
     }
 
@@ -130,6 +135,7 @@ pub const Context = struct {
         while (!self.should_quit) {
             self.mutex.lock();
             defer self.mutex.unlock();
+            defer self.signal_render = false;
 
             while (!self.signal_render and !self.should_quit) {
                 self.condition.wait(&self.mutex);
@@ -142,7 +148,7 @@ pub const Context = struct {
             );
             defer self.allocator.free(encoded_image.base64);
 
-            self.current_page = try self.vx.transmitPreEncodedImage(
+            const img = try self.vx.transmitPreEncodedImage(
                 self.tty.anyWriter(),
                 encoded_image.base64,
                 encoded_image.width,
@@ -150,56 +156,53 @@ pub const Context = struct {
                 .rgb,
             );
 
-            if (!self.should_check_cache) return;
+            _ = try self.cache.put(.{
+                .colorize = self.config.general.colorize,
+                .page = self.pdf_handler.current_page_number,
+            }, .{ .image = img });
 
-            if (self.current_page) |img| {
-                _ = try self.cache.put(.{
-                    .colorize = self.config.general.colorize,
-                    .page = self.pdf_handler.current_page_number,
-                }, .{ .image = img });
+            if (self.render_page == self.pdf_handler.current_page_number) {
+                self.current_page = img;
+                if (self.loop) |*loop| loop.postEvent(.should_rerender);
             }
-
-            self.should_check_cache = false;
-            self.signal_render = false;
         }
     }
 
     pub fn run(self: *Self) !void {
         self.current_state = .{ .view = ViewState.init(self) };
 
-        var loop: vaxis.Loop(Event) = .{
-            .tty = &self.tty,
-            .vaxis = &self.vx,
-        };
+        self.loop = vaxis.Loop(Event){ .tty = &self.tty, .vaxis = &self.vx };
 
-        try loop.init();
-        try loop.start();
-        defer loop.stop();
-        try self.vx.enterAltScreen(self.tty.anyWriter());
-        try self.vx.queryTerminal(self.tty.anyWriter(), 1 * std.time.ns_per_s);
-        try self.vx.setMouseMode(self.tty.anyWriter(), true);
+        if (self.loop) |*loop| {
+            try loop.init();
+            try loop.start();
+            defer loop.stop();
+            try self.vx.enterAltScreen(self.tty.anyWriter());
+            try self.vx.queryTerminal(self.tty.anyWriter(), 1 * std.time.ns_per_s);
+            try self.vx.setMouseMode(self.tty.anyWriter(), true);
 
-        self.render_thread = try std.Thread.spawn(.{}, renderWorker, .{self});
+            self.render_thread = try std.Thread.spawn(.{}, renderWorker, .{self});
 
-        if (self.config.file_monitor.enabled) {
-            if (self.watcher) |*w| {
-                w.setCallback(callback, &loop);
-                self.watcher_thread = try std.Thread.spawn(.{}, watcherWorker, .{ self, w });
-            }
-        }
-
-        while (!self.should_quit) {
-            loop.pollEvent();
-
-            while (loop.tryEvent()) |event| {
-                try self.update(event);
+            if (self.config.file_monitor.enabled) {
+                if (self.watcher) |*w| {
+                    w.setCallback(callback, &self.loop);
+                    self.watcher_thread = try std.Thread.spawn(.{}, watcherWorker, .{ self, w });
+                }
             }
 
-            try self.draw();
+            while (!self.should_quit) {
+                loop.pollEvent();
 
-            var buffered = self.tty.bufferedWriter();
-            try self.vx.render(buffered.writer().any());
-            try buffered.flush();
+                while (loop.tryEvent()) |event| {
+                    try self.update(event);
+                }
+
+                try self.draw();
+
+                var buffered = self.tty.bufferedWriter();
+                try self.vx.render(buffered.writer().any());
+                try buffered.flush();
+            }
         }
     }
 
@@ -237,12 +240,10 @@ pub const Context = struct {
     }
 
     pub fn quit(self: *Self) void {
-        {
-            self.mutex.lock();
-            defer self.mutex.unlock();
-            self.should_quit = true;
-            self.condition.signal();
-        }
+        self.mutex.lock();
+        self.should_quit = true;
+        self.condition.signal();
+        self.mutex.unlock();
     }
 
     pub fn update(self: *Self, event: Event) !void {
@@ -259,6 +260,9 @@ pub const Context = struct {
             .file_changed => {
                 try self.pdf_handler.reloadDocument();
                 // we could remove the current page from the cache here
+                self.reload_page = true;
+            },
+            .should_rerender => {
                 self.reload_page = true;
             },
         }
@@ -285,15 +289,17 @@ pub const Context = struct {
             }
         }
 
+        // TODO make this a struct or something
+        self.render_page = self.pdf_handler.current_page_number;
         self.window_width = window_width;
         self.window_height = window_height;
 
-        {
-            self.mutex.lock();
-            defer self.mutex.unlock();
-            self.signal_render = true;
-        }
+        self.mutex.lock();
+        self.signal_render = true;
         self.condition.signal();
+        self.mutex.unlock();
+
+        self.should_check_cache = false;
     }
 
     pub fn drawCurrentPage(self: *Self, win: vaxis.Window) !void {
