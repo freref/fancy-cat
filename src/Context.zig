@@ -35,6 +35,7 @@ pub const Context = struct {
     watcher_thread: ?std.Thread,
     render_thread: ?std.Thread,
     mutex: std.Thread.Mutex,
+    terminal_mutex: std.Thread.Mutex,
     condition: std.Thread.Condition,
     signal_render: bool,
     render_page: u16,
@@ -83,6 +84,7 @@ pub const Context = struct {
             .watcher_thread = null,
             .render_thread = null,
             .mutex = std.Thread.Mutex{},
+            .terminal_mutex = std.Thread.Mutex{},
             .condition = std.Thread.Condition{},
             .signal_render = false,
             .window_width = 0,
@@ -134,7 +136,6 @@ pub const Context = struct {
     fn renderWorker(self: *Self) !void {
         while (!self.should_quit) {
             self.mutex.lock();
-            defer self.mutex.unlock();
 
             while (!self.signal_render and !self.should_quit) {
                 self.condition.wait(&self.mutex);
@@ -142,12 +143,16 @@ pub const Context = struct {
 
             self.signal_render = false;
 
+            self.mutex.unlock();
+
             const encoded_image = try self.pdf_handler.renderPage(
                 self.render_page,
                 self.window_width,
                 self.window_height,
             );
             defer self.allocator.free(encoded_image.base64);
+
+            self.terminal_mutex.lock();
 
             const img = try self.vx.transmitPreEncodedImage(
                 self.tty.anyWriter(),
@@ -157,15 +162,23 @@ pub const Context = struct {
                 .rgb,
             );
 
-            _ = try self.cache.put(.{
-                .colorize = self.config.general.colorize,
-                .page = self.render_page,
-            }, .{ .image = img });
+            self.terminal_mutex.unlock();
+
+            self.mutex.lock();
 
             if (self.render_page == self.pdf_handler.current_page_number) {
                 self.current_page = img;
                 if (self.loop) |*loop| loop.postEvent(.should_rerender);
             }
+
+            if (!self.config.cache.enabled) return;
+
+            _ = try self.cache.put(.{
+                .colorize = self.config.general.colorize,
+                .page = self.render_page,
+            }, .{ .image = img });
+
+            self.mutex.unlock();
         }
     }
 
@@ -200,6 +213,8 @@ pub const Context = struct {
 
                 try self.draw();
 
+                self.terminal_mutex.lock();
+                defer self.terminal_mutex.unlock();
                 var buffered = self.tty.bufferedWriter();
                 try self.vx.render(buffered.writer().any());
                 try buffered.flush();
@@ -220,7 +235,6 @@ pub const Context = struct {
     }
 
     pub fn resetCurrentPage(self: *Self) void {
-        self.pdf_handler.resetZoomAndScroll();
         self.should_check_cache = self.config.cache.enabled;
         self.reload_page = true;
     }
