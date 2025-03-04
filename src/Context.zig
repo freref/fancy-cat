@@ -135,14 +135,15 @@ pub const Context = struct {
         while (!self.should_quit) {
             self.mutex.lock();
             defer self.mutex.unlock();
-            defer self.signal_render = false;
 
             while (!self.signal_render and !self.should_quit) {
                 self.condition.wait(&self.mutex);
             }
 
+            self.signal_render = false;
+
             const encoded_image = try self.pdf_handler.renderPage(
-                self.pdf_handler.current_page_number,
+                self.render_page,
                 self.window_width,
                 self.window_height,
             );
@@ -158,7 +159,7 @@ pub const Context = struct {
 
             _ = try self.cache.put(.{
                 .colorize = self.config.general.colorize,
-                .page = self.pdf_handler.current_page_number,
+                .page = self.render_page,
             }, .{ .image = img });
 
             if (self.render_page == self.pdf_handler.current_page_number) {
@@ -262,9 +263,7 @@ pub const Context = struct {
                 // we could remove the current page from the cache here
                 self.reload_page = true;
             },
-            .should_rerender => {
-                self.reload_page = true;
-            },
+            .should_rerender => {},
         }
     }
 
