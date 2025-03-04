@@ -32,6 +32,10 @@ pub const Context = struct {
     current_page: ?vaxis.Image,
     watcher: ?fzwatch.Watcher,
     watcher_thread: ?std.Thread,
+    render_thread: ?std.Thread,
+    mutex: std.Thread.Mutex,
+    condition: std.Thread.Condition,
+    signal_render: bool,
     config: *Config,
     current_state: State,
     reload_page: bool,
@@ -72,6 +76,10 @@ pub const Context = struct {
             .watcher = watcher,
             .mouse = null,
             .watcher_thread = null,
+            .render_thread = null,
+            .mutex = std.Thread.Mutex{},
+            .condition = std.Thread.Condition{},
+            .signal_render = false,
             .config = config,
             .current_state = undefined,
             .reload_page = true,
@@ -92,6 +100,7 @@ pub const Context = struct {
         }
 
         if (self.page_info_text.len > 0) self.allocator.free(self.page_info_text);
+        if (self.render_thread) |thread| thread.join();
 
         self.allocator.destroy(self.config);
         self.cache.deinit();
@@ -113,6 +122,20 @@ pub const Context = struct {
         try watcher.start(.{ .latency = self.config.file_monitor.latency });
     }
 
+    fn renderWorker(self: *Self) void {
+        while (!self.should_quit) {
+            self.mutex.lock();
+            defer self.mutex.unlock();
+
+            while (!self.signal_render and !self.should_quit) {
+                self.condition.wait(&self.mutex);
+            }
+
+            std.debug.print("work work work work work", .{});
+            self.signal_render = false;
+        }
+    }
+
     pub fn run(self: *Self) !void {
         self.current_state = .{ .view = ViewState.init(self) };
 
@@ -127,6 +150,8 @@ pub const Context = struct {
         try self.vx.enterAltScreen(self.tty.anyWriter());
         try self.vx.queryTerminal(self.tty.anyWriter(), 1 * std.time.ns_per_s);
         try self.vx.setMouseMode(self.tty.anyWriter(), true);
+
+        self.render_thread = try std.Thread.spawn(.{}, renderWorker, .{self});
 
         if (self.config.file_monitor.enabled) {
             if (self.watcher) |*w| {
@@ -173,7 +198,7 @@ pub const Context = struct {
 
         // Global keybindings
         if (key.matches(km.quit.codepoint, km.quit.mods)) {
-            self.should_quit = true;
+            self.quit();
             return;
         }
 
@@ -181,6 +206,15 @@ pub const Context = struct {
             .view => |*state| state.handleKeyStroke(key, km),
             .command => |*state| state.handleKeyStroke(key, km),
         };
+    }
+
+    pub fn quit(self: *Self) void {
+        {
+            self.mutex.lock();
+            defer self.mutex.unlock();
+            self.should_quit = true;
+            self.condition.signal();
+        }
     }
 
     pub fn update(self: *Self, event: Event) !void {
@@ -222,6 +256,13 @@ pub const Context = struct {
                 return cached.image;
             }
         }
+
+        {
+            self.mutex.lock();
+            defer self.mutex.unlock();
+            self.signal_render = true;
+        }
+        self.condition.signal();
 
         const encoded_image = try self.pdf_handler.renderPage(
             page_number,
