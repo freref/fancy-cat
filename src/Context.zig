@@ -344,6 +344,8 @@ pub const Context = struct {
                 .width = dims.cols,
                 .height = dims.rows,
             });
+            self.terminal_mutex.lock();
+            self.terminal_mutex.unlock();
             try img.draw(center, .{ .scale = .contain });
         }
     }
