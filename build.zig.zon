@@ -2,7 +2,7 @@
     .name = .fancy_cat,
     .version = "0.4.0",
     .fingerprint = 0x866b0119567be39e, // Changing this has security and trust implications.
-    .minimum_zig_version = "0.14.0-dev.3445+6c3cbb0c8",
+    .minimum_zig_version = "0.14.0",
     .dependencies = .{
         .vaxis = .{
             .url = "https://github.com/freref/libvaxis/archive/d409f2f168192374aa7c625f61f6fe64fdb66818.zip",
