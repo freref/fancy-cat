@@ -60,7 +60,7 @@ pub fn executeCommand(self: *Self, cmd: []const u8) void {
     const cmd_str = std.mem.trim(u8, cmd, " ");
 
     if (std.mem.eql(u8, cmd_str, "q")) {
-        self.context.should_quit = true;
+        self.context.quit();
     }
 
     if (std.fmt.parseInt(u16, cmd_str, 10)) |page_num| {
