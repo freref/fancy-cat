@@ -202,8 +202,6 @@ pub const Context = struct {
         }
     }
 
-    // TODO make this func interchangeable with other file formats
-    // (no pdf specific logic in context)
     pub fn getPage(
         self: *Self,
         page_number: u16,
