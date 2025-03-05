@@ -303,11 +303,12 @@ pub const Context = struct {
         }
 
         // TODO make this a struct or something
+
+        self.mutex.lock();
         self.render_page = self.pdf_handler.current_page_number;
         self.window_width = window_width;
         self.window_height = window_height;
 
-        self.mutex.lock();
         self.signal_render = true;
         self.condition.signal();
         self.mutex.unlock();
