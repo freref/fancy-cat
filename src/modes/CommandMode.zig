@@ -64,7 +64,7 @@ pub fn executeCommand(self: *Self, cmd: []const u8) void {
     }
 
     if (std.fmt.parseInt(u16, cmd_str, 10)) |page_num| {
-        const success = self.context.pdf_handler.goToPage(page_num);
+        const success = self.context.document_handler.goToPage(page_num);
         if (success) {
             self.context.resetCurrentPage();
         }

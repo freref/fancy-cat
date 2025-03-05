@@ -2,22 +2,17 @@ const Self = @This();
 const std = @import("std");
 const fastb64z = @import("fastb64z");
 const vaxis = @import("vaxis");
-const Config = @import("./config/Config.zig");
-const Cache = @import("./Cache.zig");
+const Config = @import("../config/Config.zig");
+const types = @import("./types.zig");
 const c = @cImport({
     @cInclude("mupdf/fitz.h");
     @cInclude("mupdf/pdf.h");
 });
 
-pub const EncodedImage = struct { base64: []const u8, width: u16, height: u16 };
-pub const PdfError = error{ FailedToCreateContext, FailedToOpenDocument, InvalidPageNumber };
-pub const ScrollDirection = enum { Up, Down, Left, Right };
-
 allocator: std.mem.Allocator,
 ctx: [*c]c.fz_context,
 doc: [*c]c.fz_document,
 total_pages: u16,
-current_page_number: u16,
 path: []const u8,
 active_zoom: f32,
 default_zoom: f32,
@@ -31,12 +26,11 @@ config: *Config,
 pub fn init(
     allocator: std.mem.Allocator,
     path: []const u8,
-    initial_page: ?u16,
     config: *Config,
 ) !Self {
     const ctx = c.fz_new_context(null, null, c.FZ_STORE_UNLIMITED) orelse {
         std.debug.print("Failed to create mupdf context\n", .{});
-        return PdfError.FailedToCreateContext;
+        return types.DocumentError.FailedToCreateContext;
     };
     errdefer c.fz_drop_context(ctx);
 
@@ -47,24 +41,17 @@ pub fn init(
     const doc = c.fz_open_document(ctx, path.ptr) orelse {
         const err_msg = c.fz_caught_message(ctx);
         std.debug.print("Failed to open document: {s}\n", .{err_msg});
-        return PdfError.FailedToOpenDocument;
+        return types.DocumentError.FailedToOpenDocument;
     };
     errdefer c.fz_drop_document(ctx, doc);
 
     const total_pages = @as(u16, @intCast(c.fz_count_pages(ctx, doc)));
-    const current_page_number = if (initial_page) |page| blk: {
-        if (page < 1 or page > total_pages) {
-            return PdfError.InvalidPageNumber;
-        }
-        break :blk page - 1;
-    } else 0;
 
     return .{
         .allocator = allocator,
         .ctx = ctx,
         .doc = doc,
         .total_pages = total_pages,
-        .current_page_number = current_page_number,
         .path = path,
         .active_zoom = 0,
         .default_zoom = 0,
@@ -90,13 +77,10 @@ pub fn reloadDocument(self: *Self) !void {
 
     self.doc = c.fz_open_document(self.ctx, self.path.ptr) orelse {
         std.debug.print("Failed to reload document\n", .{});
-        return PdfError.FailedToOpenDocument;
+        return types.DocumentError.FailedToOpenDocument;
     };
 
     self.total_pages = @as(u16, @intCast(c.fz_count_pages(self.ctx, self.doc.?)));
-    if (self.current_page_number >= self.total_pages) {
-        self.current_page_number = self.total_pages - 1;
-    }
 }
 
 fn calculateZoomLevel(self: *Self, window_width: u32, window_height: u32, bound: c.fz_rect) void {
@@ -141,7 +125,7 @@ pub fn renderPage(
     page_number: u16,
     window_width: u32,
     window_height: u32,
-) !EncodedImage {
+) !types.EncodedImage {
     const page = c.fz_load_page(self.ctx, self.doc, page_number);
     defer c.fz_drop_page(self.ctx, page);
     const bound = c.fz_bound_page(self.ctx, page);
@@ -192,21 +176,11 @@ pub fn renderPage(
     const b64_buf = try self.allocator.alloc(u8, base64Encoder.calcSize(sample_count));
     const encoded = base64Encoder.encode(b64_buf, samples[0..sample_count]);
 
-    return EncodedImage{
+    return types.EncodedImage{
         .base64 = encoded,
         .width = @intCast(width),
         .height = @intCast(height),
     };
-}
-
-pub fn changePage(self: *Self, delta: i32) bool {
-    const new_page = @as(i32, @intCast(self.current_page_number)) + delta;
-
-    if (new_page >= 0 and new_page < self.total_pages) {
-        self.current_page_number = @as(u16, @intCast(new_page));
-        return true;
-    }
-    return false;
 }
 
 pub fn zoomIn(self: *Self) void {
@@ -221,7 +195,7 @@ pub fn toggleColor(self: *Self) void {
     self.config.general.colorize = !self.config.general.colorize;
 }
 
-pub fn scroll(self: *Self, direction: ScrollDirection) void {
+pub fn scroll(self: *Self, direction: types.ScrollDirection) void {
     const step = self.config.general.scroll_step / self.active_zoom;
     switch (direction) {
         .Up => {
@@ -259,18 +233,14 @@ pub fn scroll(self: *Self, direction: ScrollDirection) void {
     }
 }
 
+pub fn resetDefaultZoom(self: *Self) void {
+    self.default_zoom = 0;
+}
+
 pub fn resetZoomAndScroll(self: *Self) void {
     self.active_zoom = self.default_zoom;
     self.y_offset = 0;
     self.x_offset = 0;
-}
-
-pub fn goToPage(self: *Self, pageNum: u16) bool {
-    if (pageNum >= 1 and pageNum <= self.total_pages and pageNum != self.current_page_number + 1) {
-        self.current_page_number = @as(u16, @intCast(pageNum)) - 1;
-        return true;
-    }
-    return false;
 }
 
 pub fn toggleWidthMode(self: *Self) void {

@@ -4,7 +4,7 @@ const ViewMode = @import("modes/ViewMode.zig");
 const CommandMode = @import("modes/CommandMode.zig");
 const fzwatch = @import("fzwatch");
 const Config = @import("config/Config.zig");
-const PdfHandler = @import("./PdfHandler.zig");
+const DocumentHandler = @import("handlers/DocumentHandler.zig");
 const Cache = @import("./Cache.zig");
 
 pub const panic = vaxis.panic_handler;
@@ -27,7 +27,7 @@ pub const Context = struct {
     tty: vaxis.Tty,
     vx: vaxis.Vaxis,
     mouse: ?vaxis.Mouse,
-    pdf_handler: PdfHandler,
+    document_handler: DocumentHandler,
     page_info_text: []u8,
     current_page: ?vaxis.Image,
     watcher: ?fzwatch.Watcher,
@@ -49,8 +49,8 @@ pub const Context = struct {
         errdefer allocator.destroy(config);
         config.* = try Config.init(allocator);
 
-        var pdf_handler = try PdfHandler.init(allocator, path, initial_page, config);
-        errdefer pdf_handler.deinit();
+        var document_handler = try DocumentHandler.init(allocator, path, initial_page, config);
+        errdefer document_handler.deinit();
 
         var watcher: ?fzwatch.Watcher = null;
         if (config.file_monitor.enabled) {
@@ -66,7 +66,7 @@ pub const Context = struct {
             .should_quit = false,
             .tty = tty,
             .vx = vx,
-            .pdf_handler = pdf_handler,
+            .document_handler = document_handler,
             .page_info_text = &[_]u8{},
             .current_page = null,
             .watcher = watcher,
@@ -95,7 +95,7 @@ pub const Context = struct {
 
         self.allocator.destroy(self.config);
         self.cache.deinit();
-        self.pdf_handler.deinit();
+        self.document_handler.deinit();
         self.vx.deinit(self.allocator, self.tty.anyWriter());
         self.tty.deinit();
     }
@@ -163,7 +163,7 @@ pub const Context = struct {
     }
 
     pub fn resetCurrentPage(self: *Self) void {
-        self.pdf_handler.resetZoomAndScroll();
+        self.document_handler.resetZoomAndScroll();
         self.should_check_cache = self.config.cache.enabled;
         self.reload_page = true;
     }
@@ -189,13 +189,13 @@ pub const Context = struct {
             .mouse => |mouse| self.mouse = mouse,
             .winsize => |ws| {
                 try self.vx.resize(self.allocator, self.tty.anyWriter(), ws);
-                self.pdf_handler.default_zoom = 0;
-                self.pdf_handler.resetZoomAndScroll();
+                self.document_handler.resetDefaultZoom();
+                self.document_handler.resetZoomAndScroll();
                 self.cache.clear();
                 self.reload_page = true;
             },
             .file_changed => {
-                try self.pdf_handler.reloadDocument();
+                try self.document_handler.reloadDocument();
                 // we could remove the current page from the cache here
                 self.reload_page = true;
             },
@@ -223,7 +223,7 @@ pub const Context = struct {
             }
         }
 
-        const encoded_image = try self.pdf_handler.renderPage(
+        const encoded_image = try self.document_handler.renderPage(
             page_number,
             window_width,
             window_height,
@@ -261,7 +261,7 @@ pub const Context = struct {
             }
 
             self.current_page = try self.getPage(
-                self.pdf_handler.current_page_number,
+                self.document_handler.getCurrentPageNumber(),
                 x_pix,
                 y_pix,
             );
@@ -302,7 +302,7 @@ pub const Context = struct {
             &.{
                 .{ .text = mode_text, .style = self.config.status_bar.style },
                 .{ .text = "   ", .style = self.config.status_bar.style },
-                .{ .text = self.pdf_handler.path, .style = self.config.status_bar.style },
+                .{ .text = self.document_handler.getPath(), .style = self.config.status_bar.style },
             },
             .{ .col_offset = 1 },
         );
@@ -312,7 +312,10 @@ pub const Context = struct {
         self.page_info_text = try std.fmt.allocPrint(
             self.allocator,
             "{d}:{d}",
-            .{ self.pdf_handler.current_page_number + 1, self.pdf_handler.total_pages },
+            .{
+                self.document_handler.getCurrentPageNumber() + 1,
+                self.document_handler.getTotalPages(),
+            },
         );
         _ = status_bar.print(
             &.{.{ .text = self.page_info_text, .style = self.config.status_bar.style }},
