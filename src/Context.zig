@@ -285,6 +285,7 @@ pub const Context = struct {
     // (no pdf specific logic in context)
     pub fn getCurrentPage(
         self: *Self,
+        page_number: u16,
         window_width: u32,
         window_height: u32,
     ) !void {
@@ -301,8 +302,6 @@ pub const Context = struct {
                 return;
             }
         }
-
-        // TODO make this a struct or something
 
         self.mutex.lock();
         self.render_page = self.pdf_handler.current_page_number;
@@ -327,7 +326,11 @@ pub const Context = struct {
                 y_pix -|= 2 * pix_per_row;
             }
 
-            try self.getCurrentPage(x_pix, y_pix);
+            self.current_page = try self.getPage(
+                self.pdf_handler.current_page_number,
+                x_pix,
+                y_pix,
+            );
 
             self.reload_page = false;
         }
