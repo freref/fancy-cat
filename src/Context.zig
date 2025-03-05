@@ -14,6 +14,7 @@ const Event = union(enum) {
     mouse: vaxis.Mouse,
     winsize: vaxis.Winsize,
     file_changed,
+    should_rerender,
 };
 
 pub const StateType = enum { view, command };
@@ -32,11 +33,20 @@ pub const Context = struct {
     current_page: ?vaxis.Image,
     watcher: ?fzwatch.Watcher,
     watcher_thread: ?std.Thread,
+    render_thread: ?std.Thread,
+    mutex: std.Thread.Mutex,
+    terminal_mutex: std.Thread.Mutex,
+    condition: std.Thread.Condition,
+    signal_render: bool,
+    render_page: u16,
+    window_width: u32,
+    window_height: u32,
     config: *Config,
     current_state: State,
     reload_page: bool,
     cache: Cache,
     should_check_cache: bool,
+    loop: ?vaxis.Loop(Event),
 
     pub fn init(allocator: std.mem.Allocator, args: [][:0]u8) !Self {
         const path = args[1];
@@ -72,11 +82,20 @@ pub const Context = struct {
             .watcher = watcher,
             .mouse = null,
             .watcher_thread = null,
+            .render_thread = null,
+            .mutex = std.Thread.Mutex{},
+            .terminal_mutex = std.Thread.Mutex{},
+            .condition = std.Thread.Condition{},
+            .signal_render = false,
+            .window_width = 0,
+            .window_height = 0,
+            .render_page = 0,
             .config = config,
             .current_state = undefined,
             .reload_page = true,
             .cache = Cache.init(allocator, config),
             .should_check_cache = config.cache.enabled,
+            .loop = null,
         };
     }
 
@@ -92,6 +111,7 @@ pub const Context = struct {
         }
 
         if (self.page_info_text.len > 0) self.allocator.free(self.page_info_text);
+        if (self.render_thread) |thread| thread.join();
 
         self.allocator.destroy(self.config);
         self.cache.deinit();
@@ -113,40 +133,92 @@ pub const Context = struct {
         try watcher.start(.{ .latency = self.config.file_monitor.latency });
     }
 
+    fn renderWorker(self: *Self) !void {
+        while (!self.should_quit) {
+            self.mutex.lock();
+
+            while (!self.signal_render and !self.should_quit) {
+                self.condition.wait(&self.mutex);
+            }
+
+            self.signal_render = false;
+
+            self.mutex.unlock();
+
+            const encoded_image = try self.pdf_handler.renderPage(
+                self.render_page,
+                self.window_width,
+                self.window_height,
+            );
+            defer self.allocator.free(encoded_image.base64);
+
+            self.terminal_mutex.lock();
+
+            const img = try self.vx.transmitPreEncodedImage(
+                self.tty.anyWriter(),
+                encoded_image.base64,
+                encoded_image.width,
+                encoded_image.height,
+                .rgb,
+            );
+
+            self.terminal_mutex.unlock();
+
+            self.mutex.lock();
+
+            if (self.render_page == self.pdf_handler.current_page_number) {
+                self.current_page = img;
+                if (self.loop) |*loop| loop.postEvent(.should_rerender);
+            }
+
+            if (!self.config.cache.enabled) return;
+
+            _ = try self.cache.put(.{
+                .colorize = self.config.general.colorize,
+                .page = self.render_page,
+            }, .{ .image = img });
+
+            self.mutex.unlock();
+        }
+    }
+
     pub fn run(self: *Self) !void {
         self.current_state = .{ .view = ViewState.init(self) };
 
-        var loop: vaxis.Loop(Event) = .{
-            .tty = &self.tty,
-            .vaxis = &self.vx,
-        };
+        self.loop = vaxis.Loop(Event){ .tty = &self.tty, .vaxis = &self.vx };
 
-        try loop.init();
-        try loop.start();
-        defer loop.stop();
-        try self.vx.enterAltScreen(self.tty.anyWriter());
-        try self.vx.queryTerminal(self.tty.anyWriter(), 1 * std.time.ns_per_s);
-        try self.vx.setMouseMode(self.tty.anyWriter(), true);
+        if (self.loop) |*loop| {
+            try loop.init();
+            try loop.start();
+            defer loop.stop();
+            try self.vx.enterAltScreen(self.tty.anyWriter());
+            try self.vx.queryTerminal(self.tty.anyWriter(), 1 * std.time.ns_per_s);
+            try self.vx.setMouseMode(self.tty.anyWriter(), true);
 
-        if (self.config.file_monitor.enabled) {
-            if (self.watcher) |*w| {
-                w.setCallback(callback, &loop);
-                self.watcher_thread = try std.Thread.spawn(.{}, watcherWorker, .{ self, w });
-            }
-        }
+            self.render_thread = try std.Thread.spawn(.{}, renderWorker, .{self});
 
-        while (!self.should_quit) {
-            loop.pollEvent();
-
-            while (loop.tryEvent()) |event| {
-                try self.update(event);
+            if (self.config.file_monitor.enabled) {
+                if (self.watcher) |*w| {
+                    w.setCallback(callback, &self.loop);
+                    self.watcher_thread = try std.Thread.spawn(.{}, watcherWorker, .{ self, w });
+                }
             }
 
-            try self.draw();
+            while (!self.should_quit) {
+                loop.pollEvent();
 
-            var buffered = self.tty.bufferedWriter();
-            try self.vx.render(buffered.writer().any());
-            try buffered.flush();
+                while (loop.tryEvent()) |event| {
+                    try self.update(event);
+                }
+
+                try self.draw();
+
+                self.terminal_mutex.lock();
+                defer self.terminal_mutex.unlock();
+                var buffered = self.tty.bufferedWriter();
+                try self.vx.render(buffered.writer().any());
+                try buffered.flush();
+            }
         }
     }
 
@@ -163,7 +235,6 @@ pub const Context = struct {
     }
 
     pub fn resetCurrentPage(self: *Self) void {
-        self.pdf_handler.resetZoomAndScroll();
         self.should_check_cache = self.config.cache.enabled;
         self.reload_page = true;
     }
@@ -173,7 +244,7 @@ pub const Context = struct {
 
         // Global keybindings
         if (key.matches(km.quit.codepoint, km.quit.mods)) {
-            self.should_quit = true;
+            self.quit();
             return;
         }
 
@@ -181,6 +252,13 @@ pub const Context = struct {
             .view => |*state| state.handleKeyStroke(key, km),
             .command => |*state| state.handleKeyStroke(key, km),
         };
+    }
+
+    pub fn quit(self: *Self) void {
+        self.mutex.lock();
+        self.should_quit = true;
+        self.condition.signal();
+        self.mutex.unlock();
     }
 
     pub fn update(self: *Self, event: Event) !void {
@@ -199,54 +277,41 @@ pub const Context = struct {
                 // we could remove the current page from the cache here
                 self.reload_page = true;
             },
+            .should_rerender => {},
         }
     }
 
     // TODO make this func interchangeable with other file formats
     // (no pdf specific logic in context)
-    pub fn getPage(
+    pub fn getCurrentPage(
         self: *Self,
-        page_number: u16,
         window_width: u32,
         window_height: u32,
-    ) !vaxis.Image {
+    ) !void {
         if (self.should_check_cache) {
             if (self.cache.get(.{
                 .colorize = self.config.general.colorize,
-                .page = page_number,
+                .page = self.pdf_handler.current_page_number,
             })) |cached| {
                 // Once we get the cached image we don't need to check the cache anymore because
                 // The only actions a user can take is zoom or scrolling, but we don't cache those
                 // Or go to the next page, at which point we set check_cache to true again
                 self.should_check_cache = false;
-                return cached.image;
+                self.current_page = cached.image;
+                return;
             }
         }
 
-        const encoded_image = try self.pdf_handler.renderPage(
-            page_number,
-            window_width,
-            window_height,
-        );
-        defer self.allocator.free(encoded_image.base64);
+        self.mutex.lock();
+        self.render_page = self.pdf_handler.current_page_number;
+        self.window_width = window_width;
+        self.window_height = window_height;
 
-        const image = try self.vx.transmitPreEncodedImage(
-            self.tty.anyWriter(),
-            encoded_image.base64,
-            encoded_image.width,
-            encoded_image.height,
-            .rgb,
-        );
+        self.signal_render = true;
+        self.condition.signal();
+        self.mutex.unlock();
 
-        if (!self.should_check_cache) return image;
-
-        _ = try self.cache.put(.{
-            .colorize = self.config.general.colorize,
-            .page = page_number,
-        }, .{ .image = image });
         self.should_check_cache = false;
-
-        return image;
     }
 
     pub fn drawCurrentPage(self: *Self, win: vaxis.Window) !void {
@@ -260,11 +325,7 @@ pub const Context = struct {
                 y_pix -|= 2 * pix_per_row;
             }
 
-            self.current_page = try self.getPage(
-                self.pdf_handler.current_page_number,
-                x_pix,
-                y_pix,
-            );
+            try self.getCurrentPage(x_pix, y_pix);
 
             self.reload_page = false;
         }
@@ -282,6 +343,8 @@ pub const Context = struct {
                 .width = dims.cols,
                 .height = dims.rows,
             });
+            self.terminal_mutex.lock();
+            self.terminal_mutex.unlock();
             try img.draw(center, .{ .scale = .contain });
         }
     }
