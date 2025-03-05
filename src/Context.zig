@@ -38,7 +38,7 @@ pub const Context = struct {
     terminal_mutex: std.Thread.Mutex,
     condition: std.Thread.Condition,
     signal_render: bool,
-    render_page: u16,
+    render_page_number: u16,
     window_width: u32,
     window_height: u32,
     config: *Config,
@@ -89,7 +89,7 @@ pub const Context = struct {
             .signal_render = false,
             .window_width = 0,
             .window_height = 0,
-            .render_page = 0,
+            .render_page_number = 0,
             .config = config,
             .current_state = undefined,
             .reload_page = true,
@@ -146,7 +146,7 @@ pub const Context = struct {
             self.mutex.unlock();
 
             const encoded_image = try self.pdf_handler.renderPage(
-                self.render_page,
+                self.render_page_number,
                 self.window_width,
                 self.window_height,
             );
@@ -166,7 +166,7 @@ pub const Context = struct {
 
             self.mutex.lock();
 
-            if (self.render_page == self.pdf_handler.current_page_number) {
+            if (self.render_page_number == self.pdf_handler.current_page_number) {
                 self.current_page = img;
                 if (self.loop) |*loop| loop.postEvent(.should_rerender);
             }
@@ -175,7 +175,7 @@ pub const Context = struct {
 
             _ = try self.cache.put(.{
                 .colorize = self.config.general.colorize,
-                .page = self.render_page,
+                .page = self.render_page_number,
             }, .{ .image = img });
 
             self.mutex.unlock();
@@ -303,7 +303,7 @@ pub const Context = struct {
         }
 
         self.mutex.lock();
-        self.render_page = self.pdf_handler.current_page_number;
+        self.render_page_number = self.pdf_handler.current_page_number;
         self.window_width = window_width;
         self.window_height = window_height;
 
