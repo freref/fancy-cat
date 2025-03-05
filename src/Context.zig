@@ -1,7 +1,7 @@
 const std = @import("std");
 const vaxis = @import("vaxis");
-const ViewState = @import("states/ViewState.zig");
-const CommandState = @import("states/CommandState.zig");
+const ViewMode = @import("modes/ViewMode.zig");
+const CommandMode = @import("modes/CommandMode.zig");
 const fzwatch = @import("fzwatch");
 const Config = @import("config/Config.zig");
 const PdfHandler = @import("./PdfHandler.zig");
@@ -17,7 +17,7 @@ const Event = union(enum) {
 };
 
 pub const StateType = enum { view, command };
-pub const State = union(StateType) { view: ViewState, command: CommandState };
+pub const State = union(StateType) { view: ViewMode, command: CommandMode };
 
 pub const Context = struct {
     const Self = @This();
@@ -114,7 +114,7 @@ pub const Context = struct {
     }
 
     pub fn run(self: *Self) !void {
-        self.current_state = .{ .view = ViewState.init(self) };
+        self.current_state = .{ .view = ViewMode.init(self) };
 
         var loop: vaxis.Loop(Event) = .{
             .tty = &self.tty,
@@ -157,8 +157,8 @@ pub const Context = struct {
         }
 
         switch (new_state) {
-            .view => self.current_state = .{ .view = ViewState.init(self) },
-            .command => self.current_state = .{ .command = CommandState.init(self) },
+            .view => self.current_state = .{ .view = ViewMode.init(self) },
+            .command => self.current_state = .{ .command = CommandMode.init(self) },
         }
     }
 

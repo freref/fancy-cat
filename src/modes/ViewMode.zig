@@ -1,7 +1,7 @@
 const Self = @This();
 const vaxis = @import("vaxis");
 const Context = @import("../Context.zig").Context;
-const CommandState = @import("./CommandState.zig");
+const CommandMode = @import("./CommandMode.zig");
 const Config = @import("../config/Config.zig");
 
 context: *Context,
