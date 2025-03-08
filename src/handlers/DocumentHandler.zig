@@ -4,8 +4,23 @@ const Config = @import("../config/Config.zig");
 const PdfHandler = @import("./PdfHandler.zig");
 const types = @import("./types.zig");
 
+pub const FileFormat = enum {
+    pdf,
+    epub,
+
+    pub fn fromPath(path: []const u8) !FileFormat {
+        if (std.mem.endsWith(u8, path, ".pdf")) {
+            return .pdf;
+        } else if (std.mem.endsWith(u8, path, ".epub")) {
+            return .epub;
+        }
+        return types.DocumentError.UnsupportedFileFormat;
+    }
+};
+
 pdf_handler: PdfHandler,
 current_page_number: u16,
+file_format: FileFormat,
 
 pub fn init(
     allocator: std.mem.Allocator,
@@ -13,6 +28,8 @@ pub fn init(
     initial_page: ?u16,
     config: *Config,
 ) !Self {
+    const format = try FileFormat.fromPath(path);
+
     var pdf_handler = try PdfHandler.init(allocator, path, config);
     errdefer pdf_handler.deinit();
 
@@ -26,6 +43,7 @@ pub fn init(
     return .{
         .pdf_handler = pdf_handler,
         .current_page_number = current_page_number,
+        .file_format = format,
     };
 }
 

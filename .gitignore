@@ -28,3 +28,4 @@ target/
 lima.yaml
 .vscode
 *.log
+*.epub
