@@ -6,14 +6,14 @@ const types = @import("./types.zig");
 
 pub const FileFormat = enum {
     pdf,
-    epub,
+    // epub,
 
     pub fn fromPath(path: []const u8) !FileFormat {
         if (std.mem.endsWith(u8, path, ".pdf")) {
             return .pdf;
-        } else if (std.mem.endsWith(u8, path, ".epub")) {
-            return .epub;
-        }
+        } // else if (std.mem.endsWith(u8, path, ".epub")) {
+        //     return .epub;
+        // }
         return types.DocumentError.UnsupportedFileFormat;
     }
 };
@@ -28,6 +28,7 @@ pub fn init(
     initial_page: ?u16,
     config: *Config,
 ) !Self {
+    // TODO use this for conditional rendering
     const format = try FileFormat.fromPath(path);
 
     var pdf_handler = try PdfHandler.init(allocator, path, config);
