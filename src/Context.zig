@@ -196,7 +196,10 @@ pub const Context = struct {
             },
             .file_changed => {
                 try self.document_handler.reloadDocument();
-                // we could remove the current page from the cache here
+                _ = self.cache.remove(.{
+                    .colorize = self.config.general.colorize,
+                    .page = self.document_handler.current_page_number,
+                });
                 self.reload_page = true;
             },
         }

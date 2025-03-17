@@ -101,6 +101,19 @@ pub fn put(self: *Self, key: Key, image: CachedImage) !bool {
     return true;
 }
 
+pub fn remove(self: *Self, key: Key) bool {
+    self.mutex.lock();
+    defer self.mutex.unlock();
+
+    const node = self.map.get(key) orelse return false;
+
+    _ = self.map.remove(key);
+    self.removeNode(node);
+    self.allocator.destroy(node);
+
+    return true;
+}
+
 fn addToFront(self: *Self, node: *Node) void {
     node.next = self.head;
     node.prev = null;
