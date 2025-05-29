@@ -96,14 +96,6 @@ pub fn toggleWidthMode(self: *Self) void {
     self.pdf_handler.toggleWidthMode();
 }
 
-pub fn adjustZoom(self: *Self, zoom_in: bool) void {
-    if (zoom_in) {
-        self.pdf_handler.zoomIn();
-    } else {
-        self.pdf_handler.zoomOut();
-    }
-}
-
 pub fn isMinZoom(self: *Self) bool {
     return self.pdf_handler.isMinZoom();
 }

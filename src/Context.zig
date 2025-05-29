@@ -190,8 +190,8 @@ pub const Context = struct {
                 self.mouse = mouse;
                 if (mouse.mods.ctrl) {
                     switch (mouse.button) {
-                        .wheel_up => self.document_handler.adjustZoom(true),
-                        .wheel_down => self.document_handler.adjustZoom(false),
+                        .wheel_up => self.document_handler.zoomIn(),
+                        .wheel_down => self.document_handler.zoomOut(),
                         else => {},
                     }
                 } else {
