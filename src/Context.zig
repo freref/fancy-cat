@@ -183,44 +183,71 @@ pub const Context = struct {
         };
     }
 
+    pub fn mouse_scroll(self: *Self, mouse: vaxis.Mouse) void {
+        // If ctrl is held, zoom in and out
+        if (mouse.mods.ctrl) {
+            switch (mouse.button) {
+                .wheel_up => {
+                    self.document_handler.zoomIn();
+                    self.reload_page = true;
+                },
+                .wheel_down => {
+                    self.document_handler.zoomOut();
+                    self.reload_page = true;
+                },
+                else => {},
+            }
+            return;
+        }
+
+        // If zoomed in, scroll up and down page
+        if (!self.document_handler.isMinZoom()) {
+            switch (mouse.button) {
+                .wheel_up => {
+                    self.document_handler.scroll(.Up);
+                    self.reload_page = true;
+                },
+                .wheel_down => {
+                    self.document_handler.scroll(.Down);
+                    self.reload_page = true;
+                },
+                else => {},
+            }
+            return;
+        }
+
+        // Scroll through pages
+        switch (mouse.button) {
+            .wheel_up => {
+                if (self.document_handler.changePage(-1)) {
+                    self.resetCurrentPage();
+                    self.document_handler.resetZoomAndScroll();
+                    self.reload_page = true;
+                }
+            },
+            .wheel_down => {
+                if (self.document_handler.changePage(1)) {
+                    self.resetCurrentPage();
+                    self.document_handler.resetZoomAndScroll();
+                    self.reload_page = true;
+                }
+            },
+            else => {},
+        }
+    }
+
     pub fn update(self: *Self, event: Event) !void {
         switch (event) {
             .key_press => |key| try self.handleKeyStroke(key),
             .mouse => |mouse| {
-                self.mouse = mouse;
-                if (mouse.mods.ctrl) {
-                    switch (mouse.button) {
-                        .wheel_up => self.document_handler.zoomIn(),
-                        .wheel_down => self.document_handler.zoomOut(),
-                        else => {},
-                    }
-                } else {
-                    // If at minimum zoom, change pages instead of scrolling
-                    if (self.document_handler.isMinZoom()) {
-                        switch (mouse.button) {
-                            .wheel_up => {
-                                if (self.document_handler.changePage(-1)) {
-                                    self.resetCurrentPage();
-                                    self.document_handler.resetZoomAndScroll();
-                                }
-                            },
-                            .wheel_down => {
-                                if (self.document_handler.changePage(1)) {
-                                    self.resetCurrentPage();
-                                    self.document_handler.resetZoomAndScroll();
-                                }
-                            },
-                            else => {},
-                        }
-                    } else {
-                        switch (mouse.button) {
-                            .wheel_up => self.document_handler.scroll(.Up),
-                            .wheel_down => self.document_handler.scroll(.Down),
-                            else => {},
-                        }
-                    }
+                switch (mouse.button) {
+                    .wheel_up, .wheel_down => {
+                        self.mouse_scroll(mouse);
+                    },
+                    else => {
+                        // For non-wheel mouse events (movement, clicks), do nothing
+                    },
                 }
-                self.reload_page = true;
             },
             .winsize => |ws| {
                 try self.vx.resize(self.allocator, self.tty.anyWriter(), ws);
