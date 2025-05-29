@@ -95,6 +95,19 @@ pub fn resetZoomAndScroll(self: *Self) void {
 pub fn toggleWidthMode(self: *Self) void {
     self.pdf_handler.toggleWidthMode();
 }
+
+pub fn adjustZoom(self: *Self, zoom_in: bool) void {
+    if (zoom_in) {
+        self.pdf_handler.zoomIn();
+    } else {
+        self.pdf_handler.zoomOut();
+    }
+}
+
+pub fn isMinZoom(self: *Self) bool {
+    return self.pdf_handler.isMinZoom();
+}
+
 pub fn goToPage(self: *Self, page_num: u16) bool {
     if (page_num >= 1 and page_num <= self.getTotalPages() and page_num != self.current_page_number + 1) {
         self.current_page_number = @as(u16, @intCast(page_num)) - 1;

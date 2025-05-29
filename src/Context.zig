@@ -186,7 +186,42 @@ pub const Context = struct {
     pub fn update(self: *Self, event: Event) !void {
         switch (event) {
             .key_press => |key| try self.handleKeyStroke(key),
-            .mouse => |mouse| self.mouse = mouse,
+            .mouse => |mouse| {
+                self.mouse = mouse;
+                if (mouse.mods.ctrl) {
+                    switch (mouse.button) {
+                        .wheel_up => self.document_handler.adjustZoom(true),
+                        .wheel_down => self.document_handler.adjustZoom(false),
+                        else => {},
+                    }
+                } else {
+                    // If at minimum zoom, change pages instead of scrolling
+                    if (self.document_handler.isMinZoom()) {
+                        switch (mouse.button) {
+                            .wheel_up => {
+                                if (self.document_handler.changePage(-1)) {
+                                    self.resetCurrentPage();
+                                    self.document_handler.resetZoomAndScroll();
+                                }
+                            },
+                            .wheel_down => {
+                                if (self.document_handler.changePage(1)) {
+                                    self.resetCurrentPage();
+                                    self.document_handler.resetZoomAndScroll();
+                                }
+                            },
+                            else => {},
+                        }
+                    } else {
+                        switch (mouse.button) {
+                            .wheel_up => self.document_handler.scroll(.Up),
+                            .wheel_down => self.document_handler.scroll(.Down),
+                            else => {},
+                        }
+                    }
+                }
+                self.reload_page = true;
+            },
             .winsize => |ws| {
                 try self.vx.resize(self.allocator, self.tty.anyWriter(), ws);
                 self.document_handler.resetDefaultZoom();
