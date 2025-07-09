@@ -248,3 +248,7 @@ pub fn toggleWidthMode(self: *Self) void {
     self.active_zoom = 0;
     self.width_mode = !self.width_mode;
 }
+
+pub fn isMinZoom(self: *Self) bool {
+    return self.active_zoom <= self.default_zoom;
+}
