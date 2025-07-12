@@ -9,8 +9,8 @@
             .hash = "vaxis-0.1.0-BWNV_K3yCACrTy3A5cbZElLyICx5a2O2EzPxmgVRcbKJ",
         },
         .fzwatch = .{
-            .url = "https://github.com/freref/fzwatch/archive/6d5b49ed5a8ee3ed08f0e80b8f340cc3c8c8ac6e.tar.gz",
-            .hash = "fzwatch-0.1.0-AAAAAFwxAACmGB7IN0835JkUIEuY_0zDJr_KGkZZQ2SI",
+            .url = "https://github.com/freref/fzwatch/archive/5d150a3d5ac3244b1009afe656886251f21aa2e7.tar.gz",
+            .hash = "fzwatch-0.1.0-AAAAAGcxAACOfH5OrOlsgp5-OaZ5Xcra9qsFcKB7C4St",
         },
         .fastb64z = .{
             .url = "https://github.com/freref/fastb64z/archive/fa3f34a4528609a8778124641b080e90d93c357a.tar.gz",
