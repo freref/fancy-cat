@@ -26,7 +26,9 @@
     "size": 1.0,
     "zoom_step": 1.25,
     "zoom_min": 1.0,
-    "scroll_step": 100.0
+    "scroll_step": 100.0,
+    "retry_delay": 0.2,
+    "timeout": 5.0
   },
   "StatusBar": {
     "enabled": true,
