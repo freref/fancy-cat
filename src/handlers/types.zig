@@ -6,6 +6,7 @@ pub const ScrollDirection = enum { Up, Down, Left, Right };
 pub const DocumentError = error{
     FailedToCreateContext,
     FailedToOpenDocument,
+    FailedToRenderPage,
     InvalidPageNumber,
     UnsupportedFileFormat,
 };
