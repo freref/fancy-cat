@@ -52,6 +52,8 @@ Controls automatic reloading when PDF file changes. Useful for live previewing:
 - `zoom_step`: `f32` - How much to zoom in/out per keystroke
 - `zoom_min`: `f32` - Maximum zoom out level
 - `scroll_step`: `f32` - Pixels to move per scroll command
+- `retry_delay`: `f32` - Time in seconds before retrying to load a document or render a page
+- `timeout`: `f32` - Maximum duration in seconds to keep retrying to load a document or render a page
 
 ## StatusBar
 
