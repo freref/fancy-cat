@@ -24,7 +24,7 @@ pub const KeyMap = struct {
 /// File monitor will be used to watch for changes to files and rerender them
 pub const FileMonitor = struct {
     enabled: bool = true,
-    // Amount of time to wait inbetween polling for file changes
+    // Amount of time in seconds to wait in between polling for file changes
     latency: f16 = 0.1,
 };
 
@@ -40,6 +40,9 @@ pub const General = struct {
     zoom_min: f32 = 1.0,
     // pixels
     scroll_step: f32 = 100.0,
+    // seconds 
+    retry_delay: f32 = 0.2,
+    timeout: f32 = 5.0,
 };
 
 pub const StatusBar = struct {
@@ -220,6 +223,18 @@ fn parseGeneral(value: std.json.Value, allocator: std.mem.Allocator) !General {
             f32,
             allocator,
             obj.get("scroll_step") orelse .{ .float = 100.0 },
+            .{},
+        ),
+        .retry_delay = try std.json.innerParseFromValue(
+            f32,
+            allocator,
+            obj.get("retry_delay") orelse .{ .float = 0.2 },
+            .{},
+        ),
+        .timeout = try std.json.innerParseFromValue(
+            f32,
+            allocator,
+            obj.get("timeout") orelse .{ .float = 5.0 },
             .{},
         ),
     };
