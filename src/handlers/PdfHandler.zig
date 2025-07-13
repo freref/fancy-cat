@@ -5,6 +5,7 @@ const vaxis = @import("vaxis");
 const Config = @import("../config/Config.zig");
 const types = @import("./types.zig");
 const c = @cImport({
+    @cInclude("fitz-z.h");
     @cInclude("mupdf/fitz.h");
     @cInclude("mupdf/pdf.h");
 });
@@ -38,7 +39,7 @@ pub fn init(
     c.fz_set_error_callback(ctx, null, null);
     c.fz_set_warning_callback(ctx, null, null);
 
-    const doc = c.fz_open_document(ctx, path.ptr) orelse {
+    const doc = c.fz_open_document_z(ctx, path.ptr) orelse {
         const err_msg = c.fz_caught_message(ctx);
         std.debug.print("Failed to open document: {s}\n", .{err_msg});
         return types.DocumentError.FailedToOpenDocument;
@@ -70,17 +71,36 @@ pub fn deinit(self: *Self) void {
 }
 
 pub fn reloadDocument(self: *Self) !void {
-    if (self.doc) |doc| {
-        c.fz_drop_document(self.ctx, doc);
-        self.doc = null;
+    const retry_delay = @as(u64, @intFromFloat(self.config.general.retry_delay * @as(f64, std.time.ns_per_s)));
+    const timeout = @as(i64, @intFromFloat(self.config.general.timeout *  @as(f64, std.time.ms_per_s)));
+    const start_time = std.time.milliTimestamp();
+
+    while (true) {
+        const now = std.time.milliTimestamp();
+        if (now - start_time > timeout) {
+            std.debug.print("Failed to reload document\n", .{});
+            return types.DocumentError.FailedToOpenDocument;
+        }
+
+        if (self.doc) |doc| {
+            c.fz_drop_document(self.ctx, doc);
+            self.doc = null;
+        }
+
+        const doc = c.fz_open_document_z(self.ctx, self.path.ptr) orelse {
+            std.time.sleep(retry_delay);
+            continue; // try again
+        };
+        self.doc = doc;
+
+        const page_count = c.fz_count_pages_z(self.ctx, self.doc);
+        if (page_count == 0) {
+            std.time.sleep(retry_delay);
+            continue; // try again
+        }
+        self.total_pages = @as(u16, @intCast(page_count));
+        return;
     }
-
-    self.doc = c.fz_open_document(self.ctx, self.path.ptr) orelse {
-        std.debug.print("Failed to reload document\n", .{});
-        return types.DocumentError.FailedToOpenDocument;
-    };
-
-    self.total_pages = @as(u16, @intCast(c.fz_count_pages(self.ctx, self.doc.?)));
 }
 
 fn calculateZoomLevel(self: *Self, window_width: u32, window_height: u32, bound: c.fz_rect) void {
@@ -126,61 +146,76 @@ pub fn renderPage(
     window_width: u32,
     window_height: u32,
 ) !types.EncodedImage {
-    const page = c.fz_load_page(self.ctx, self.doc, page_number);
-    defer c.fz_drop_page(self.ctx, page);
-    const bound = c.fz_bound_page(self.ctx, page);
+    const retry_delay = @as(u64, @intFromFloat(self.config.general.retry_delay * @as(f64, std.time.ns_per_s)));
+    const timeout = @as(i64, @intFromFloat(self.config.general.timeout *  @as(f64, std.time.ms_per_s)));
+    const start_time = std.time.milliTimestamp();
 
-    self.calculateZoomLevel(window_width, window_height, bound);
+    while (true) {
+        const now = std.time.milliTimestamp();
+        if (now - start_time > timeout) {
+            std.debug.print("Failed to render page\n", .{});
+            return types.DocumentError.FailedToRenderPage;
+        }
 
-    // document view
-    const view_width = @max(1, @min(
-        self.active_zoom * bound.x1,
-        @as(f32, @floatFromInt(window_width)),
-    ));
-    const view_height = @max(1, @min(
-        self.active_zoom * bound.y1,
-        @as(f32, @floatFromInt(window_height)),
-    ));
+        const page = c.fz_load_page_z(self.ctx, self.doc, @as(c_int, @intCast(page_number))) orelse {
+            std.time.sleep(retry_delay);
+            continue;
+        };
+        defer c.fz_drop_page(self.ctx, page);
+        const bound = c.fz_bound_page(self.ctx, page);
 
-    self.calculateXY(view_width, view_height, bound);
+        self.calculateZoomLevel(window_width, window_height, bound);
 
-    const bbox = c.fz_make_irect(
-        0,
-        0,
-        @intFromFloat(view_width),
-        @intFromFloat(view_height),
-    );
-    const pix = c.fz_new_pixmap_with_bbox(self.ctx, c.fz_device_rgb(self.ctx), bbox, null, 0);
-    defer c.fz_drop_pixmap(self.ctx, pix);
-    c.fz_clear_pixmap_with_value(self.ctx, pix, 0xFF);
+        // document view
+        const view_width = @max(1, @min(
+            self.active_zoom * bound.x1,
+            @as(f32, @floatFromInt(window_width)),
+        ));
+        const view_height = @max(1, @min(
+            self.active_zoom * bound.y1,
+            @as(f32, @floatFromInt(window_height)),
+        ));
 
-    var ctm = c.fz_scale(self.active_zoom, self.active_zoom);
-    ctm = c.fz_pre_translate(ctm, self.x_offset - self.x_center, self.y_offset - self.y_center);
+        self.calculateXY(view_width, view_height, bound);
 
-    const dev = c.fz_new_draw_device(self.ctx, ctm, pix);
-    defer c.fz_drop_device(self.ctx, dev);
-    c.fz_run_page(self.ctx, page, dev, c.fz_identity, null);
-    c.fz_close_device(self.ctx, dev);
+        const bbox = c.fz_make_irect(
+            0,
+            0,
+            @intFromFloat(view_width),
+            @intFromFloat(view_height),
+        );
+        const pix = c.fz_new_pixmap_with_bbox(self.ctx, c.fz_device_rgb(self.ctx), bbox, null, 0);
+        defer c.fz_drop_pixmap(self.ctx, pix);
+        c.fz_clear_pixmap_with_value(self.ctx, pix, 0xFF);
 
-    if (self.config.general.colorize) {
-        c.fz_tint_pixmap(self.ctx, pix, self.config.general.black, self.config.general.white);
+        var ctm = c.fz_scale(self.active_zoom, self.active_zoom);
+        ctm = c.fz_pre_translate(ctm, self.x_offset - self.x_center, self.y_offset - self.y_center);
+
+        const dev = c.fz_new_draw_device(self.ctx, ctm, pix);
+        defer c.fz_drop_device(self.ctx, dev);
+        c.fz_run_page(self.ctx, page, dev, c.fz_identity, null);
+        c.fz_close_device(self.ctx, dev);
+
+        if (self.config.general.colorize) {
+            c.fz_tint_pixmap(self.ctx, pix, self.config.general.black, self.config.general.white);
+        }
+
+        const width = @as(usize, @intCast(@abs(bbox.x1)));
+        const height = @as(usize, @intCast(@abs(bbox.y1)));
+        const samples = c.fz_pixmap_samples(self.ctx, pix);
+
+        const base64Encoder = fastb64z.standard.Encoder;
+        const sample_count = width * height * 3;
+
+        const b64_buf = try self.allocator.alloc(u8, base64Encoder.calcSize(sample_count));
+        const encoded = base64Encoder.encode(b64_buf, samples[0..sample_count]);
+
+        return types.EncodedImage{
+            .base64 = encoded,
+            .width = @as(u16, @intCast(width)),
+            .height = @as(u16, @intCast(height)),
+        };
     }
-
-    const width = @as(usize, @intCast(@abs(bbox.x1)));
-    const height = @as(usize, @intCast(@abs(bbox.y1)));
-    const samples = c.fz_pixmap_samples(self.ctx, pix);
-
-    const base64Encoder = fastb64z.standard.Encoder;
-    const sample_count = width * height * 3;
-
-    const b64_buf = try self.allocator.alloc(u8, base64Encoder.calcSize(sample_count));
-    const encoded = base64Encoder.encode(b64_buf, samples[0..sample_count]);
-
-    return types.EncodedImage{
-        .base64 = encoded,
-        .width = @intCast(width),
-        .height = @intCast(height),
-    };
 }
 
 pub fn zoomIn(self: *Self) void {
