@@ -28,7 +28,8 @@
     "zoom_min": 1.0,
     "scroll_step": 100.0,
     "retry_delay": 0.2,
-    "timeout": 5.0
+    "timeout": 5.0,
+    "dpi": 96.0
   },
   "StatusBar": {
     "enabled": true,
