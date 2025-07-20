@@ -141,3 +141,9 @@ pub fn getXOffset(self: *Self) f32 {
 pub fn getYOffset(self: *Self) f32 {
     return self.pdf_handler.y_offset;
 }
+
+// setters
+
+pub fn setZoom(self: *Self, zoom_factor: f32) void {
+    self.pdf_handler.active_zoom = @max(zoom_factor, self.pdf_handler.config.general.zoom_min);
+}
