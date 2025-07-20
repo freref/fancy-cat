@@ -20,8 +20,15 @@ tail: ?*Node,
 config: *Config,
 lru_size: usize,
 mutex: std.Thread.Mutex,
+vx: vaxis.Vaxis,
+tty: *const vaxis.Tty,
 
-pub fn init(allocator: std.mem.Allocator, config: *Config) Self {
+pub fn init(
+    allocator: std.mem.Allocator,
+    config: *Config,
+    vx: vaxis.Vaxis,
+    tty: *const vaxis.Tty,
+) Self {
     return .{
         .allocator = allocator,
         .map = std.AutoHashMap(Key, *Node).init(allocator),
@@ -30,18 +37,25 @@ pub fn init(allocator: std.mem.Allocator, config: *Config) Self {
         .config = config,
         .lru_size = config.cache.lru_size,
         .mutex = .{},
+        .vx = vx,
+        .tty = tty,
     };
 }
 
 pub fn deinit(self: *Self) void {
     self.mutex.lock();
     defer self.mutex.unlock();
+
     var current = self.head;
     while (current) |node| {
         const next = node.next;
+
+        self.vx.freeImage(self.tty.anyWriter(), node.value.image.id);
         self.allocator.destroy(node);
+
         current = next;
     }
+
     self.map.deinit();
 }
 
@@ -51,10 +65,8 @@ pub fn clear(self: *Self) void {
 
     var current = self.head;
     while (current) |node| {
-        // TODO clear the image from the terminal everywhere
-        // Currently assuming the terminal takes care of it somewhat
-        //self.vx.freeImage(self.tty.anyWriter(), node.value.image.id);
         const next = node.next;
+        // To avoid flicker, image is freed during put eviction
         self.allocator.destroy(node);
         current = next;
     }
@@ -67,6 +79,7 @@ pub fn clear(self: *Self) void {
 pub fn get(self: *Self, key: Key) ?CachedImage {
     self.mutex.lock();
     defer self.mutex.unlock();
+
     const node = self.map.get(key) orelse return null;
     self.moveToFront(node);
     return node.value;
@@ -75,6 +88,7 @@ pub fn get(self: *Self, key: Key) ?CachedImage {
 pub fn put(self: *Self, key: Key, image: CachedImage) !bool {
     self.mutex.lock();
     defer self.mutex.unlock();
+
     if (self.map.get(key)) |node| {
         self.moveToFront(node);
         return false;
@@ -94,6 +108,8 @@ pub fn put(self: *Self, key: Key, image: CachedImage) !bool {
     if (self.map.count() > self.lru_size) {
         const tail_node = self.tail orelse unreachable;
         _ = self.map.remove(tail_node.key);
+
+        self.vx.freeImage(self.tty.anyWriter(), tail_node.value.image.id);
         self.removeNode(tail_node);
         self.allocator.destroy(tail_node);
     }
@@ -106,8 +122,9 @@ pub fn remove(self: *Self, key: Key) bool {
     defer self.mutex.unlock();
 
     const node = self.map.get(key) orelse return false;
-
     _ = self.map.remove(key);
+
+    self.vx.freeImage(self.tty.anyWriter(), node.value.image.id);
     self.removeNode(node);
     self.allocator.destroy(node);
 
