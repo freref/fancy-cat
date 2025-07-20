@@ -40,9 +40,10 @@ pub const General = struct {
     zoom_min: f32 = 1.0,
     // pixels
     scroll_step: f32 = 100.0,
-    // seconds 
+    // seconds
     retry_delay: f32 = 0.2,
     timeout: f32 = 5.0,
+    dpi: f32 = 96.0,
 };
 
 pub const StatusBar = struct {
@@ -235,6 +236,12 @@ fn parseGeneral(value: std.json.Value, allocator: std.mem.Allocator) !General {
             f32,
             allocator,
             obj.get("timeout") orelse .{ .float = 5.0 },
+            .{},
+        ),
+        .dpi = try std.json.innerParseFromValue(
+            f32,
+            allocator,
+            obj.get("dpi") orelse .{ .float = 96.0 },
             .{},
         ),
     };
