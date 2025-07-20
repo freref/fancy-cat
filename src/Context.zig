@@ -75,7 +75,7 @@ pub const Context = struct {
             .config = config,
             .current_mode = undefined,
             .reload_page = true,
-            .cache = Cache.init(allocator, config),
+            .cache = Cache.init(allocator, config, vx, &tty),
             .should_check_cache = config.cache.enabled,
         };
     }
@@ -193,11 +193,7 @@ pub const Context = struct {
             },
             .file_changed => {
                 try self.document_handler.reloadDocument();
-                _ = self.cache.remove(.{
-                    .colorize = self.config.general.colorize,
-                    .page = self.document_handler.current_page_number,
-                    .width_mode = self.document_handler.getWidthMode(),
-                });
+                self.cache.clear();
                 self.reload_page = true;
             },
         }
