@@ -163,7 +163,6 @@ pub const Context = struct {
     }
 
     pub fn resetCurrentPage(self: *Self) void {
-        self.document_handler.resetZoomAndScroll();
         self.should_check_cache = self.config.cache.enabled;
         self.reload_page = true;
     }
@@ -189,8 +188,6 @@ pub const Context = struct {
             .mouse => |mouse| self.mouse = mouse,
             .winsize => |ws| {
                 try self.vx.resize(self.allocator, self.tty.anyWriter(), ws);
-                self.document_handler.resetDefaultZoom();
-                self.document_handler.resetZoomAndScroll();
                 self.cache.clear();
                 self.reload_page = true;
             },
