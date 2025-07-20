@@ -199,6 +199,7 @@ pub const Context = struct {
                 _ = self.cache.remove(.{
                     .colorize = self.config.general.colorize,
                     .page = self.document_handler.current_page_number,
+                    .width_mode = self.document_handler.getWidthMode(),
                 });
                 self.reload_page = true;
             },
@@ -215,6 +216,7 @@ pub const Context = struct {
             if (self.cache.get(.{
                 .colorize = self.config.general.colorize,
                 .page = page_number,
+                .width_mode = self.document_handler.getWidthMode(),
             })) |cached| {
                 // Once we get the cached image we don't need to check the cache anymore because
                 // The only actions a user can take is zoom or scrolling, but we don't cache those
@@ -244,6 +246,7 @@ pub const Context = struct {
         _ = try self.cache.put(.{
             .colorize = self.config.general.colorize,
             .page = page_number,
+            .width_mode = self.document_handler.getWidthMode(),
         }, .{ .image = image });
         self.should_check_cache = false;
 

@@ -114,6 +114,10 @@ pub fn changePage(self: *Self, delta: i32) bool {
 
 // getters
 
+pub fn getWidthMode(self: *Self) bool {
+    return self.pdf_handler.getWidthMode();
+}
+
 pub fn getCurrentPageNumber(self: *Self) u16 {
     return self.current_page_number;
 }

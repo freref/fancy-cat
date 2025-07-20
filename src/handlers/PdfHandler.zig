@@ -72,7 +72,7 @@ pub fn deinit(self: *Self) void {
 
 pub fn reloadDocument(self: *Self) !void {
     const retry_delay = @as(u64, @intFromFloat(self.config.general.retry_delay * @as(f64, std.time.ns_per_s)));
-    const timeout = @as(i64, @intFromFloat(self.config.general.timeout *  @as(f64, std.time.ms_per_s)));
+    const timeout = @as(i64, @intFromFloat(self.config.general.timeout * @as(f64, std.time.ms_per_s)));
     const start_time = std.time.milliTimestamp();
 
     while (true) {
@@ -147,7 +147,7 @@ pub fn renderPage(
     window_height: u32,
 ) !types.EncodedImage {
     const retry_delay = @as(u64, @intFromFloat(self.config.general.retry_delay * @as(f64, std.time.ns_per_s)));
-    const timeout = @as(i64, @intFromFloat(self.config.general.timeout *  @as(f64, std.time.ms_per_s)));
+    const timeout = @as(i64, @intFromFloat(self.config.general.timeout * @as(f64, std.time.ms_per_s)));
     const start_time = std.time.milliTimestamp();
 
     while (true) {
@@ -282,4 +282,8 @@ pub fn toggleWidthMode(self: *Self) void {
     self.default_zoom = 0;
     self.active_zoom = 0;
     self.width_mode = !self.width_mode;
+}
+
+pub fn getWidthMode(self: *Self) bool {
+    return self.width_mode;
 }
