@@ -48,12 +48,13 @@ Controls automatic reloading when PDF file changes. Useful for live previewing:
 - `colorize`: `bool` - Toggle color inversion for dark/light mode
 - `white`: `i32` - Hex color code for white pixels in colorized mode
 - `black`: `i32` - Hex color code for black pixels in colorized mode
-- `size`: `f32` - PDF size relative to screen (0.0-1.0)
+- `size`: `f32` - Initial PDF size relative to screen (0.0-1.0)
 - `zoom_step`: `f32` - How much to zoom in/out per keystroke
 - `zoom_min`: `f32` - Maximum zoom out level
 - `scroll_step`: `f32` - Pixels to move per scroll command
 - `retry_delay`: `f32` - Time in seconds before retrying to load a document or render a page
 - `timeout`: `f32` - Maximum duration in seconds to keep retrying to load a document or render a page
+- `dpi`: `f32` - Screen DPI to interpret 100% zoom as actual PDF size
 
 ## StatusBar
 
