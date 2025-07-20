@@ -61,6 +61,19 @@ pub fn executeCommand(self: *Self, cmd: []const u8) void {
 
     if (std.mem.eql(u8, cmd_str, "q")) {
         self.context.should_quit = true;
+        return;
+    }
+
+    if (std.mem.endsWith(u8, cmd_str, "%")) {
+        const number_str = cmd_str[0 .. cmd_str.len - 1];
+        if (std.fmt.parseFloat(f32, number_str)) |percent| {
+            // TODO detect DPI
+            const dpi = self.context.document_handler.pdf_handler.config.general.dpi;
+            const zoom_factor = (percent * dpi) / 7200.0;
+            self.context.document_handler.setZoom(zoom_factor);
+            self.context.resetCurrentPage();
+        } else |_| {}
+        return;
     }
 
     if (std.fmt.parseInt(u16, cmd_str, 10)) |page_num| {
