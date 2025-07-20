@@ -208,7 +208,6 @@ pub const Context = struct {
         const cache_key = Cache.Key{
             .colorize = self.config.general.colorize,
             .page = page_number,
-            .width_mode = self.document_handler.getWidthMode(),
 
             // Scale zoom and position as integers with three digits of precision for use in key
             .zoom = @as(u32, @intFromFloat(self.document_handler.getActiveZoom() * 1000.0)),

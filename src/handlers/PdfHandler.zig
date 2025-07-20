@@ -283,7 +283,3 @@ pub fn toggleWidthMode(self: *Self) void {
     self.active_zoom = 0;
     self.width_mode = !self.width_mode;
 }
-
-pub fn getWidthMode(self: *Self) bool {
-    return self.width_mode;
-}
