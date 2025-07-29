@@ -26,7 +26,6 @@ head: ?*Node,
 tail: ?*Node,
 config: *Config,
 lru_size: usize,
-mutex: std.Thread.Mutex,
 vx: vaxis.Vaxis,
 tty: *const vaxis.Tty,
 
@@ -43,16 +42,12 @@ pub fn init(
         .tail = null,
         .config = config,
         .lru_size = config.cache.lru_size,
-        .mutex = .{},
         .vx = vx,
         .tty = tty,
     };
 }
 
 pub fn deinit(self: *Self) void {
-    self.mutex.lock();
-    defer self.mutex.unlock();
-
     var current = self.head;
     while (current) |node| {
         const next = node.next;
@@ -67,9 +62,6 @@ pub fn deinit(self: *Self) void {
 }
 
 pub fn clear(self: *Self) void {
-    self.mutex.lock();
-    defer self.mutex.unlock();
-
     var current = self.head;
     while (current) |node| {
         const next = node.next;
@@ -84,18 +76,12 @@ pub fn clear(self: *Self) void {
 }
 
 pub fn get(self: *Self, key: Key) ?CachedImage {
-    self.mutex.lock();
-    defer self.mutex.unlock();
-
     const node = self.map.get(key) orelse return null;
     self.moveToFront(node);
     return node.value;
 }
 
 pub fn put(self: *Self, key: Key, image: CachedImage) !bool {
-    self.mutex.lock();
-    defer self.mutex.unlock();
-
     if (self.map.get(key)) |node| {
         self.moveToFront(node);
         return false;
@@ -114,24 +100,17 @@ pub fn put(self: *Self, key: Key, image: CachedImage) !bool {
 
     if (self.map.count() > self.lru_size) {
         const tail_node = self.tail orelse unreachable;
-        _ = self.map.remove(tail_node.key);
-
-        self.vx.freeImage(self.tty.anyWriter(), tail_node.value.image.id);
-        self.removeNode(tail_node);
-        self.allocator.destroy(tail_node);
+        _ = self.remove(tail_node.key);
     }
 
     return true;
 }
 
 pub fn remove(self: *Self, key: Key) bool {
-    self.mutex.lock();
-    defer self.mutex.unlock();
-
     const node = self.map.get(key) orelse return false;
     _ = self.map.remove(key);
 
-    self.vx.freeImage(self.tty.anyWriter(), node.value.image.id);
+    // self.vx.freeImage(self.tty.anyWriter(), node.value.image.id);
     self.removeNode(node);
     self.allocator.destroy(node);
 
