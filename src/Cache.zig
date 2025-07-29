@@ -52,7 +52,7 @@ pub fn deinit(self: *Self) void {
     while (current) |node| {
         const next = node.next;
 
-        self.vx.freeImage(self.tty.anyWriter(), node.value.image.id);
+        // self.vx.freeImage(self.tty.anyWriter(), node.value.image.id);
         self.allocator.destroy(node);
 
         current = next;
