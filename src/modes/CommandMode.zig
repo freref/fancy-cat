@@ -23,7 +23,9 @@ pub fn deinit(self: *Self) void {
 }
 
 pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
-    if (key.matches(km.exit_command_mode.codepoint, km.exit_command_mode.mods)) {
+    if (key.matches(km.exit_command_mode.codepoint, km.exit_command_mode.mods) or
+        (key.matches(vaxis.Key.backspace, .{}) and self.text_input.buf.realLength() == 0))
+    {
         self.context.changeMode(.view);
         return;
     }
@@ -58,7 +60,6 @@ pub fn drawCommandBar(self: *Self, win: vaxis.Window) void {
 
 pub fn executeCommand(self: *Self, cmd: []const u8) void {
     const cmd_str = std.mem.trim(u8, cmd, " ");
-
     if (std.mem.eql(u8, cmd_str, "q")) {
         self.context.should_quit = true;
         return;
