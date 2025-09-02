@@ -268,6 +268,11 @@ pub fn scroll(self: *Self, direction: types.ScrollDirection) void {
     }
 }
 
+pub fn offsetScroll(self: *Self, dx: f32, dy: f32) void {
+    self.x_offset -= dx;
+    self.y_offset += dy;
+}
+
 pub fn resetDefaultZoom(self: *Self) void {
     self.default_zoom = 0;
 }
