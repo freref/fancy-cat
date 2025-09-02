@@ -65,6 +65,22 @@ pub fn executeCommand(self: *Self, cmd: []const u8) void {
         return;
     }
 
+    if (cmd_str.len >= 3) {
+        const axis = cmd_str[0];
+        const sign = cmd_str[1];
+        if ((axis == 'x' or axis == 'y') and (sign == '+' or sign == '-')) {
+            const number_str = cmd_str[2..];
+            if (std.fmt.parseFloat(f32, number_str)) |amount| {
+                const delta = if (sign == '+') amount else -amount;
+                const dx: f32 = if (axis == 'x') delta else 0.0;
+                const dy: f32 = if (axis == 'y') delta else 0.0;
+                self.context.document_handler.offsetScroll(dx, dy);
+                self.context.resetCurrentPage();
+            } else |_| {}
+            return;
+        }
+    }
+
     if (std.mem.endsWith(u8, cmd_str, "%")) {
         const number_str = cmd_str[0 .. cmd_str.len - 1];
         if (std.fmt.parseFloat(f32, number_str)) |percent| {
