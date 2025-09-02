@@ -76,6 +76,10 @@ pub fn zoomOut(self: *Self) void {
     self.pdf_handler.zoomOut();
 }
 
+pub fn setZoom(self: *Self, zoom_factor: f32) void {
+    self.pdf_handler.active_zoom = @max(zoom_factor, self.pdf_handler.config.general.zoom_min);
+}
+
 pub fn toggleColor(self: *Self) void {
     self.pdf_handler.toggleColor();
 }
@@ -95,6 +99,7 @@ pub fn resetZoomAndScroll(self: *Self) void {
 pub fn toggleWidthMode(self: *Self) void {
     self.pdf_handler.toggleWidthMode();
 }
+
 pub fn goToPage(self: *Self, page_num: u16) bool {
     if (page_num >= 1 and page_num <= self.getTotalPages() and page_num != self.current_page_number + 1) {
         self.current_page_number = @as(u16, @intCast(page_num)) - 1;
@@ -102,6 +107,7 @@ pub fn goToPage(self: *Self, page_num: u16) bool {
     }
     return false;
 }
+
 pub fn changePage(self: *Self, delta: i32) bool {
     const new_page = @as(i32, @intCast(self.current_page_number)) + delta;
 
@@ -140,10 +146,4 @@ pub fn getXOffset(self: *Self) f32 {
 
 pub fn getYOffset(self: *Self) f32 {
     return self.pdf_handler.y_offset;
-}
-
-// setters
-
-pub fn setZoom(self: *Self, zoom_factor: f32) void {
-    self.pdf_handler.active_zoom = @max(zoom_factor, self.pdf_handler.config.general.zoom_min);
 }
