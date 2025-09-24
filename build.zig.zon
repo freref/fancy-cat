@@ -5,16 +5,16 @@
     .minimum_zig_version = "0.14.0",
     .dependencies = .{
         .vaxis = .{
-            .url = "https://github.com/freref/libvaxis/archive/6a37605dde55898dcca4769dd3eb1e333959c209.tar.gz",
-            .hash = "vaxis-0.1.0-BWNV_K3yCACrTy3A5cbZElLyICx5a2O2EzPxmgVRcbKJ",
+            .url = "https://github.com/freref/libvaxis/archive/ec8e7bd481098472a4f6ae850894328d0632e343.tar.gz",
+            .hash = "vaxis-0.5.1-BWNV_NAXCQBfhj7096k0ejbvSUOmQ21UuvIab9lr5xPE",
         },
         .fzwatch = .{
-            .url = "https://github.com/freref/fzwatch/archive/refs/tags/v0.2.2.tar.gz",
-            .hash = "fzwatch-0.2.2-6qM2OGcxAACOfH5OrOlsgp5-OaZ5Xcra9qsFcKB7C4St",
+            .url = "https://github.com/freref/fzwatch/archive/cb462430687059e09c638cccf1cadfebeaef018a.tar.gz",
+            .hash = "fzwatch-0.2.2-6qM2OKsxAACglM0hQhABi_wAJoz6jqXvQunk1yV_xAIO",
         },
         .fastb64z = .{
-            .url = "https://github.com/freref/fastb64z/archive/fa3f34a4528609a8778124641b080e90d93c357a.tar.gz",
-            .hash = "fastb64z-1.0.0-AAAAAPufAAC1oOmqjUybDgnEHsOlgJKIjnUWwFy3i3TJ",
+            .url = "https://github.com/freref/fastb64z/archive/3defc5d33162670c28e42af073cf9bc003017da6.tar.gz",
+            .hash = "fastb64z-1.0.0-x5LyQZ2gAAAYQrdQBKuqfNOY0beaxhunrksEtUOmIjhq",
         },
     },
     .paths = .{

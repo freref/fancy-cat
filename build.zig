@@ -50,41 +50,43 @@ pub fn build(b: *std.Build) void {
             return;
         }
     };
+    const allocator = std.heap.page_allocator;
+    var make_args: std.ArrayList([]const u8) = .empty;
+    defer make_args.deinit(allocator);
 
-    var make_args = std.ArrayList([]const u8).init(b.allocator);
-    defer make_args.deinit();
-
-    make_args.append("make") catch unreachable;
+    make_args.append(allocator, "make") catch unreachable;
 
     // use as many cores as possible by default (like zig) I dont know how to check for j<N> arg
     const cpu_count = std.Thread.getCpuCount() catch 1;
-    make_args.append(b.fmt("-j{d}", .{cpu_count})) catch unreachable;
+    make_args.append(allocator, b.fmt("-j{d}", .{cpu_count})) catch unreachable;
 
-    make_args.append("-C") catch unreachable;
-    make_args.append("deps/mupdf") catch unreachable;
+    make_args.append(allocator, "-C") catch unreachable;
+    make_args.append(allocator, "deps/mupdf") catch unreachable;
 
     if (target.result.os.tag == .linux) {
-        make_args.append("HAVE_X11=no") catch unreachable;
-        make_args.append("HAVE_GLUT=no") catch unreachable;
+        make_args.append(allocator, "HAVE_X11=no") catch unreachable;
+        make_args.append(allocator, "HAVE_GLUT=no") catch unreachable;
     }
 
-    make_args.append("XCFLAGS=-w -DTOFU -DTOFU_CJK -DFZ_ENABLE_PDF=1 " ++
+    make_args.append(allocator, "XCFLAGS=-w -DTOFU -DTOFU_CJK -DFZ_ENABLE_PDF=1 " ++
         "-DFZ_ENABLE_XPS=0 -DFZ_ENABLE_SVG=0 -DFZ_ENABLE_CBZ=0 " ++
         "-DFZ_ENABLE_IMG=0 -DFZ_ENABLE_HTML=0 -DFZ_ENABLE_EPUB=0") catch unreachable;
-    make_args.append("tools=no") catch unreachable;
-    make_args.append("apps=no") catch unreachable;
+    make_args.append(allocator, "tools=no") catch unreachable;
+    make_args.append(allocator, "apps=no") catch unreachable;
 
     const prefix_arg = b.fmt("prefix={s}", .{prefix});
-    make_args.append(prefix_arg) catch unreachable;
-    make_args.append("install") catch unreachable;
+    make_args.append(allocator, prefix_arg) catch unreachable;
+    make_args.append(allocator, "install") catch unreachable;
 
     const mupdf_build_step = b.addSystemCommand(make_args.items);
 
     const exe = b.addExecutable(.{
         .name = "fancy-cat",
-        .root_source_file = b.path("src/main.zig"),
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/main.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
     });
     exe.headerpad_max_install_names = true;
 
