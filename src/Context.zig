@@ -59,7 +59,8 @@ pub const Context = struct {
         }
 
         const vx = try vaxis.init(allocator, .{});
-        const tty = try vaxis.Tty.init();
+        const buffer = try allocator.alloc(u8, 4096);
+        const tty = try vaxis.Tty.init(buffer);
 
         return .{
             .allocator = allocator,

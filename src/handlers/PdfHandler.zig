@@ -88,14 +88,14 @@ pub fn reloadDocument(self: *Self) !void {
         }
 
         const doc = c.fz_open_document_z(self.ctx, self.path.ptr) orelse {
-            std.time.sleep(retry_delay);
+            std.Thread.sleep(retry_delay);
             continue; // try again
         };
         self.doc = doc;
 
         const page_count = c.fz_count_pages_z(self.ctx, self.doc);
         if (page_count == 0) {
-            std.time.sleep(retry_delay);
+            std.Thread.sleep(retry_delay);
             continue; // try again
         }
         self.total_pages = @as(u16, @intCast(page_count));
@@ -158,7 +158,7 @@ pub fn renderPage(
         }
 
         const page = c.fz_load_page_z(self.ctx, self.doc, @as(c_int, @intCast(page_number))) orelse {
-            std.time.sleep(retry_delay);
+            std.Thread.sleep(retry_delay);
             continue;
         };
         defer c.fz_drop_page(self.ctx, page);
