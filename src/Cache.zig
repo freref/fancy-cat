@@ -25,7 +25,7 @@ map: std.AutoHashMap(Key, *Node),
 head: ?*Node,
 tail: ?*Node,
 config: *Config,
-lru_size: usize,
+lru_size: u16,
 vx: vaxis.Vaxis,
 tty: *const vaxis.Tty,
 

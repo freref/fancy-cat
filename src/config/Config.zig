@@ -58,7 +58,7 @@ pub const StatusBar = struct {
 pub const Cache = struct {
     enabled: bool = true,
     // Number of pages to cache
-    lru_size: usize = 10,
+    lru_size: u16 = 10,
 };
 
 key_map: KeyMap,
@@ -297,8 +297,9 @@ fn parseCache(value: std.json.Value, allocator: std.mem.Allocator) !Cache {
             obj.get("enabled") orelse .{ .bool = true },
             .{},
         ),
+        // XXX temporary change to u16 from usize due to bug in std
         .lru_size = try std.json.innerParseFromValue(
-            u64,
+            u16,
             allocator,
             obj.get("lru_size") orelse .{ .integer = 10 },
             .{},
