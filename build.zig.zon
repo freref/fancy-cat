@@ -1,8 +1,8 @@
 .{
     .name = .fancy_cat,
-    .version = "0.4.1",
-    .fingerprint = 0x866b0119567be39e, // Changing this has security and trust implications.
-    .minimum_zig_version = "0.14.0",
+    .version = "0.5.0",
+    .fingerprint = 0x866b011980aee471, // Changing this has security and trust implications.
+    .minimum_zig_version = "0.15.0",
     .dependencies = .{
         .vaxis = .{
             .url = "https://github.com/rockorager/libvaxis/archive/f6be46dbda3633dcfe20beb0d62e7f18f5ab7121.tar.gz",
