@@ -298,7 +298,7 @@ fn parseCache(value: std.json.Value, allocator: std.mem.Allocator) !Cache {
             .{},
         ),
         .lru_size = try std.json.innerParseFromValue(
-            usize,
+            u64,
             allocator,
             obj.get("lru_size") orelse .{ .integer = 10 },
             .{},

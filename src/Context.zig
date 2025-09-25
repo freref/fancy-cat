@@ -145,8 +145,8 @@ pub const Context = struct {
 
             try self.draw();
 
-            var buffered = self.tty.bufferedWriter();
-            try self.vx.render(buffered.writer().any());
+            var buffered = self.tty.anyWriter();
+            try self.vx.render(buffered);
             try buffered.flush();
         }
     }
