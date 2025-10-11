@@ -23,6 +23,7 @@ pub const Context = struct {
     const Self = @This();
 
     allocator: std.mem.Allocator,
+    arena: std.heap.ArenaAllocator,
     should_quit: bool,
     tty: vaxis.Tty,
     vx: vaxis.Vaxis,
@@ -37,6 +38,7 @@ pub const Context = struct {
     reload_page: bool,
     cache: Cache,
     should_check_cache: bool,
+    unicode: vaxis.Unicode,
     buf: []u8,
 
     pub fn init(allocator: std.mem.Allocator, args: [][:0]u8) !Self {
@@ -62,9 +64,11 @@ pub const Context = struct {
         const vx = try vaxis.init(allocator, .{});
         const buf = try allocator.alloc(u8, 4096);
         const tty = try vaxis.Tty.init(buf);
+        const unicode = try vaxis.Unicode.init(allocator);
 
         return .{
             .allocator = allocator,
+            .arena = std.heap.ArenaAllocator.init(allocator),
             .should_quit = false,
             .tty = tty,
             .vx = vx,
@@ -79,6 +83,7 @@ pub const Context = struct {
             .reload_page = true,
             .cache = Cache.init(allocator, config, vx, &tty),
             .should_check_cache = config.cache.enabled,
+            .unicode = unicode,
             .buf = buf,
         };
     }
@@ -97,6 +102,8 @@ pub const Context = struct {
         if (self.page_info_text.len > 0) self.allocator.free(self.page_info_text);
 
         self.allocator.destroy(self.config);
+        self.arena.deinit();
+        self.unicode.deinit(self.allocator);
         self.cache.deinit();
         self.document_handler.deinit();
         self.vx.deinit(self.allocator, self.tty.anyWriter());
@@ -288,40 +295,137 @@ pub const Context = struct {
     }
 
     pub fn drawStatusBar(self: *Self, win: vaxis.Window) !void {
+        const arena = self.arena.allocator();
+
         const status_bar = win.child(.{
             .x_off = 0,
             .y_off = win.height -| 2,
             .width = win.width,
             .height = 1,
         });
-        status_bar.fill(vaxis.Cell{ .style = self.config.status_bar.style });
-        const mode_text = switch (self.current_mode) {
-            .view => "VIS",
-            .command => "CMD",
-        };
-        _ = status_bar.print(
-            &.{
-                .{ .text = mode_text, .style = self.config.status_bar.style },
-                .{ .text = "   ", .style = self.config.status_bar.style },
-                .{ .text = self.document_handler.getPath(), .style = self.config.status_bar.style },
-            },
-            .{ .col_offset = 1 },
-        );
-        if (self.page_info_text.len > 0) {
-            self.allocator.free(self.page_info_text);
+
+        // Expand all items into styled sub-items
+        var expanded_items = std.array_list.Managed(Config.StatusBar.StyledItem).init(arena);
+        defer expanded_items.deinit();
+
+        for (self.config.status_bar.items) |item| {
+            switch (item) {
+                .styled => |styled| {
+                    try expandPlaceholders(&expanded_items, styled);
+                },
+                .mode_aware => |mode_aware| {
+                    switch (self.current_mode) {
+                        .view => try expandPlaceholders(&expanded_items, mode_aware.view),
+                        .command => try expandPlaceholders(&expanded_items, mode_aware.command),
+                    }
+                },
+            }
         }
-        self.page_info_text = try std.fmt.allocPrint(
-            self.allocator,
-            "{d}:{d}",
-            .{
-                self.document_handler.getCurrentPageNumber() + 1,
-                self.document_handler.getTotalPages(),
-            },
-        );
+
+        const items = expanded_items.items;
+
+        // Find the separator
+        var separator_index: usize = items.len;
+        for (items, 0..) |item, i| {
+            if (std.mem.eql(u8, item.text, Config.StatusBar.SEPARATOR)) {
+                separator_index = i;
+                break;
+            }
+        }
+
+        if (separator_index < items.len) {
+            status_bar.fill(vaxis.Cell{ .style = items[separator_index].style });
+        } else {
+            status_bar.fill(vaxis.Cell{ .style = self.config.status_bar.style });
+        }
+
+        // Left side
+        var left_col: usize = 0;
+        for (0..separator_index) |i| {
+            try self.drawStatusText(status_bar, items[i], &left_col, true, arena);
+        }
+
+        // Right side
+        if (separator_index < items.len - 1) {
+            var right_col: usize = win.width;
+            for (0..(items.len - separator_index - 1)) |j| {
+                try self.drawStatusText(status_bar, items[items.len - 1 - j], &right_col, false, arena);
+            }
+        }
+
+        _ = self.arena.reset(.retain_capacity);
+    }
+
+    fn expandPlaceholders(list: *std.array_list.Managed(Config.StatusBar.StyledItem), styled_text: Config.StatusBar.StyledItem) !void {
+        const text = styled_text.text;
+        var last_index: usize = 0;
+
+        while (last_index < text.len) {
+            const open = std.mem.indexOfScalarPos(u8, text, last_index, '<') orelse {
+                if (last_index < text.len) {
+                    try list.append(.{ .text = text[last_index..], .style = styled_text.style });
+                }
+                break;
+            };
+
+            if (open > last_index) {
+                try list.append(.{ .text = text[last_index..open], .style = styled_text.style });
+            }
+
+            const close = std.mem.indexOfScalarPos(u8, text, open, '>') orelse {
+                try list.append(.{ .text = text[open..], .style = styled_text.style });
+                break;
+            };
+
+            try list.append(.{ .text = text[open .. close + 1], .style = styled_text.style });
+
+            last_index = close + 1;
+        }
+    }
+
+    fn drawStatusText(self: *Self, status_bar: vaxis.Window, item: Config.StatusBar.StyledItem, col_offset: *usize, left_aligned: bool, allocator: std.mem.Allocator) !void {
+        var text = item.text;
+
+        if (std.mem.eql(u8, text, Config.StatusBar.PATH)) {
+            const cwd = try std.fs.cwd().realpathAlloc(allocator, ".");
+            defer allocator.free(cwd);
+
+            const full_path = try std.fs.cwd().realpathAlloc(allocator, self.document_handler.getPath());
+            defer allocator.free(full_path);
+
+            if (std.mem.startsWith(u8, full_path, cwd)) {
+                var path = full_path[cwd.len..];
+                if (path.len > 0 and path[0] == '/') path = path[1..];
+                text = path;
+            } else if (std.posix.getenv("HOME")) |home| {
+                if (std.mem.startsWith(u8, full_path, home)) {
+                    var path = full_path[home.len..];
+                    if (path.len > 0 and path[0] == '/') path = path[1..];
+                    text = try std.fmt.allocPrint(allocator, "~/{s}", .{path});
+                } else {
+                    text = full_path;
+                }
+            } else {
+                text = full_path;
+            }
+        } else if (std.mem.eql(u8, text, Config.StatusBar.PAGE)) {
+            text = try std.fmt.allocPrint(allocator, "{}", .{self.document_handler.getCurrentPageNumber() + 1});
+        } else if (std.mem.eql(u8, text, Config.StatusBar.TOTAL_PAGES)) {
+            text = try std.fmt.allocPrint(allocator, "{}", .{self.document_handler.getTotalPages()});
+        } else if (std.mem.eql(u8, text, Config.StatusBar.SEPARATOR)) {
+            text = "";
+        }
+
+        const width = vaxis.gwidth.gwidth(text, .wcwidth, &self.unicode.width_data);
+
+        if (!left_aligned) col_offset.* -= width;
+
         _ = status_bar.print(
-            &.{.{ .text = self.page_info_text, .style = self.config.status_bar.style }},
-            .{ .col_offset = @intCast(win.width -| self.page_info_text.len -| 1) },
+            &.{.{ .text = text, .style = item.style }},
+            .{ .col_offset = @intCast(col_offset.*) },
         );
+
+        if (left_aligned) col_offset.* += width;
     }
 
     pub fn draw(self: *Self) !void {
