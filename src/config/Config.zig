@@ -189,7 +189,7 @@ pub fn init(allocator: std.mem.Allocator) !Self {
     var config_path_buf: [std.fs.max_path_bytes]u8 = undefined;
     const config_path = std.fmt.bufPrint(&config_path_buf, "{s}/config.json", .{config_dir}) catch return self;
 
-    var file = std.fs.openFileAbsolute(config_path, .{ .mode = .read_only }) catch |err| {
+    const file = std.fs.openFileAbsolute(config_path, .{ .mode = .read_only }) catch |err| {
         if (err == error.FileNotFound) {
             const newf = std.fs.createFileAbsolute(config_path, .{}) catch return self;
             newf.close();
