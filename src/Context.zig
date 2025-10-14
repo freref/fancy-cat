@@ -101,6 +101,7 @@ pub const Context = struct {
 
         if (self.page_info_text.len > 0) self.allocator.free(self.page_info_text);
 
+        self.config.deinit();
         self.allocator.destroy(self.config);
         self.arena.deinit();
         self.unicode.deinit(self.allocator);
@@ -296,6 +297,7 @@ pub const Context = struct {
 
     pub fn drawStatusBar(self: *Self, win: vaxis.Window) !void {
         const arena = self.arena.allocator();
+        defer _ = self.arena.reset(.retain_capacity);
 
         const status_bar = win.child(.{
             .x_off = 0,
@@ -352,8 +354,6 @@ pub const Context = struct {
                 try self.drawStatusText(status_bar, items[items.len - 1 - j], &right_col, false, arena);
             }
         }
-
-        _ = self.arena.reset(.retain_capacity);
     }
 
     fn expandPlaceholders(list: *std.array_list.Managed(Config.StatusBar.StyledItem), styled_text: Config.StatusBar.StyledItem) !void {
