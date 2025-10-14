@@ -38,7 +38,6 @@ pub const Context = struct {
     reload_page: bool,
     cache: Cache,
     should_check_cache: bool,
-    unicode: vaxis.Unicode,
     buf: []u8,
 
     pub fn init(allocator: std.mem.Allocator, args: [][:0]u8) !Self {
@@ -65,7 +64,6 @@ pub const Context = struct {
         const vx = try vaxis.init(allocator, .{});
         const buf = try allocator.alloc(u8, 4096);
         const tty = try vaxis.Tty.init(buf);
-        const unicode = try vaxis.Unicode.init(allocator);
 
         return .{
             .allocator = allocator,
@@ -84,7 +82,6 @@ pub const Context = struct {
             .reload_page = true,
             .cache = Cache.init(allocator, config, vx, &tty),
             .should_check_cache = config.cache.enabled,
-            .unicode = unicode,
             .buf = buf,
         };
     }
@@ -105,10 +102,9 @@ pub const Context = struct {
         self.config.deinit();
         self.allocator.destroy(self.config);
         self.arena.deinit();
-        self.unicode.deinit(self.allocator);
         self.cache.deinit();
         self.document_handler.deinit();
-        self.vx.deinit(self.allocator, self.tty.anyWriter());
+        self.vx.deinit(self.allocator, self.tty.writer());
         self.tty.deinit();
         self.allocator.free(self.buf);
     }
@@ -137,9 +133,9 @@ pub const Context = struct {
         try loop.init();
         try loop.start();
         defer loop.stop();
-        try self.vx.enterAltScreen(self.tty.anyWriter());
-        try self.vx.queryTerminal(self.tty.anyWriter(), 1 * std.time.ns_per_s);
-        try self.vx.setMouseMode(self.tty.anyWriter(), true);
+        try self.vx.enterAltScreen(self.tty.writer());
+        try self.vx.queryTerminal(self.tty.writer(), 1 * std.time.ns_per_s);
+        try self.vx.setMouseMode(self.tty.writer(), true);
 
         if (self.config.file_monitor.enabled) {
             if (self.watcher) |*w| {
@@ -157,7 +153,7 @@ pub const Context = struct {
 
             try self.draw();
 
-            var buffered = self.tty.anyWriter();
+            var buffered = self.tty.writer();
             try self.vx.render(buffered);
             try buffered.flush();
         }
@@ -200,7 +196,7 @@ pub const Context = struct {
             .key_press => |key| try self.handleKeyStroke(key),
             .mouse => |mouse| self.mouse = mouse,
             .winsize => |ws| {
-                try self.vx.resize(self.allocator, self.tty.anyWriter(), ws);
+                try self.vx.resize(self.allocator, self.tty.writer(), ws);
                 self.cache.clear();
                 self.reload_page = true;
             },
@@ -244,7 +240,7 @@ pub const Context = struct {
         defer self.allocator.free(encoded_image.base64);
 
         const image = try self.vx.transmitPreEncodedImage(
-            self.tty.anyWriter(),
+            self.tty.writer(),
             encoded_image.base64,
             encoded_image.width,
             encoded_image.height,
@@ -417,7 +413,7 @@ pub const Context = struct {
             text = "";
         }
 
-        const width = vaxis.gwidth.gwidth(text, .wcwidth, &self.unicode.width_data);
+        const width = vaxis.gwidth.gwidth(text, .wcwidth);
 
         if (!left_aligned) col_offset.* -= width;
 

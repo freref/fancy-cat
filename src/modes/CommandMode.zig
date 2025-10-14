@@ -12,7 +12,7 @@ text_input: TextInput,
 pub fn init(context: *Context) Self {
     return .{
         .context = context,
-        .text_input = TextInput.init(context.allocator, &context.vx.unicode),
+        .text_input = TextInput.init(context.allocator),
     };
 }
 

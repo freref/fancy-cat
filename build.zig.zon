@@ -2,11 +2,11 @@
     .name = .fancy_cat,
     .version = "0.5.0",
     .fingerprint = 0x866b011980aee471, // Changing this has security and trust implications.
-    .minimum_zig_version = "0.15.0",
+    .minimum_zig_version = "0.15.2",
     .dependencies = .{
         .vaxis = .{
-            .url = "https://github.com/rockorager/libvaxis/archive/f6be46dbda3633dcfe20beb0d62e7f18f5ab7121.tar.gz",
-            .hash = "vaxis-0.5.1-BWNV_PsXCQBfK1HPvsVxbPLRcxr7YmAwQ_xJhzX9HxFn",
+            .url = "https://github.com/rockorager/libvaxis/archive/7dbb9fd3122e4ffad262dd7c151d80d863b68558.tar.gz",
+            .hash = "vaxis-0.5.1-BWNV_LosCQAGmCCNOLljCIw6j6-yt53tji6n6rwJ2BhS",
         },
         .fzwatch = .{
             .url = "https://github.com/freref/fzwatch/archive/cb462430687059e09c638cccf1cadfebeaef018a.tar.gz",
