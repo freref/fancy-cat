@@ -396,17 +396,17 @@ pub const Context = struct {
             if (std.mem.startsWith(u8, full_path, cwd)) {
                 var path = full_path[cwd.len..];
                 if (path.len > 0 and path[0] == '/') path = path[1..];
-                text = path;
+                text = try std.fmt.allocPrint(allocator, "./{s}", .{path});
             } else if (std.posix.getenv("HOME")) |home| {
                 if (std.mem.startsWith(u8, full_path, home)) {
                     var path = full_path[home.len..];
                     if (path.len > 0 and path[0] == '/') path = path[1..];
                     text = try std.fmt.allocPrint(allocator, "~/{s}", .{path});
                 } else {
-                    text = full_path;
+                    text = try std.fmt.allocPrint(allocator, "{s}", .{full_path});
                 }
             } else {
-                text = full_path;
+                text = try std.fmt.allocPrint(allocator, "{s}", .{full_path});
             }
         } else if (std.mem.eql(u8, text, Config.StatusBar.PAGE)) {
             text = try std.fmt.allocPrint(allocator, "{}", .{self.document_handler.getCurrentPageNumber() + 1});
