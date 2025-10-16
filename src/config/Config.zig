@@ -34,6 +34,7 @@ pub const FileMonitor = struct {
     enabled: bool = true,
     // Amount of time in seconds to wait in between polling for file changes
     latency: f16 = 0.1,
+    reload_indicator_duration: f16 = 1.0,
 
     pub fn parse(val: std.json.Value, allocator: std.mem.Allocator) FileMonitor {
         var file_monitor = FileMonitor{};
@@ -41,6 +42,7 @@ pub const FileMonitor = struct {
 
         file_monitor.enabled = parseType(bool, val.object, "enabled", allocator, file_monitor.enabled);
         file_monitor.latency = parseType(f16, val.object, "latency", allocator, file_monitor.latency);
+        file_monitor.reload_indicator_duration = parseType(f16, val.object, "reload_indicator_duration", allocator, file_monitor.reload_indicator_duration);
 
         return file_monitor;
     }
@@ -102,9 +104,14 @@ pub const StatusBar = struct {
         view: StyledItem,
         command: StyledItem,
     };
+    pub const ReloadAwareItem = struct {
+        idle: StyledItem,
+        reload: StyledItem,
+    };
     pub const Item = union(enum) {
         styled: StyledItem,
         mode_aware: ModeAwareItem,
+        reload_aware: ReloadAwareItem,
     };
 
     const default_style = vaxis.Cell.Style{
@@ -126,6 +133,10 @@ pub const StatusBar = struct {
         .{ .styled = .{ .text = "   ", .style = default_style } },
         .{ .styled = .{ .text = PATH, .style = default_style } },
         .{ .styled = .{ .text = " ", .style = default_style } },
+        .{ .reload_aware = .{
+            .idle = .{ .text = " ", .style = default_style },
+            .reload = .{ .text = "*", .style = default_style },
+        } },
         .{ .styled = .{ .text = SEPARATOR, .style = default_style } },
         .{ .styled = .{ .text = PAGE, .style = default_style } },
         .{ .styled = .{ .text = ":", .style = default_style } },
@@ -325,6 +336,10 @@ fn applyStyle(item: StatusBar.Item, style: vaxis.Cell.Style, allocator: std.mem.
         .view = StatusBar.StyledItem{ .text = "", .style = style },
         .command = StatusBar.StyledItem{ .text = "", .style = style },
     } };
+    var reload_aware_item: StatusBar.Item = .{ .reload_aware = StatusBar.ReloadAwareItem{
+        .idle = StatusBar.StyledItem{ .text = "", .style = style },
+        .reload = StatusBar.StyledItem{ .text = "", .style = style },
+    } };
 
     switch (item) {
         .styled => |styled| {
@@ -336,6 +351,11 @@ fn applyStyle(item: StatusBar.Item, style: vaxis.Cell.Style, allocator: std.mem.
             mode_aware_item.mode_aware.command.text = allocator.dupe(u8, mode_aware.command.text) catch mode_aware_item.mode_aware.command.text;
             return mode_aware_item;
         },
+        .reload_aware => |reload_aware| {
+            reload_aware_item.reload_aware.reload.text = allocator.dupe(u8, reload_aware.reload.text) catch reload_aware_item.reload_aware.reload.text;
+            reload_aware_item.reload_aware.idle.text = allocator.dupe(u8, reload_aware.idle.text) catch reload_aware_item.reload_aware.idle.text;
+            return reload_aware_item;
+        },
     }
 }
 
@@ -344,6 +364,10 @@ fn parseItem(val: std.json.Value, allocator: std.mem.Allocator, fallback_style: 
     var mode_aware_item: StatusBar.Item = .{ .mode_aware = StatusBar.ModeAwareItem{
         .view = StatusBar.StyledItem{ .text = "", .style = fallback_style },
         .command = StatusBar.StyledItem{ .text = "", .style = fallback_style },
+    } };
+    var reload_aware_item: StatusBar.Item = .{ .reload_aware = StatusBar.ReloadAwareItem{
+        .idle = StatusBar.StyledItem{ .text = "", .style = fallback_style },
+        .reload = StatusBar.StyledItem{ .text = "", .style = fallback_style },
     } };
 
     switch (val) {
@@ -357,6 +381,11 @@ fn parseItem(val: std.json.Value, allocator: std.mem.Allocator, fallback_style: 
                 mode_aware_item.mode_aware.view = parseStyledItem(obj.get("view"), allocator, mode_aware_item.mode_aware.view);
                 mode_aware_item.mode_aware.command = parseStyledItem(obj.get("command"), allocator, mode_aware_item.mode_aware.command);
                 return mode_aware_item;
+            }
+            if (obj.contains("reload") or obj.contains("idle")) {
+                reload_aware_item.reload_aware.idle = parseStyledItem(obj.get("idle"), allocator, reload_aware_item.reload_aware.idle);
+                reload_aware_item.reload_aware.reload = parseStyledItem(obj.get("reload"), allocator, reload_aware_item.reload_aware.reload);
+                return reload_aware_item;
             }
 
             styled_item.styled = parseStyledItem(val, allocator, styled_item.styled);
