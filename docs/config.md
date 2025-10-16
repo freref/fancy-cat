@@ -32,7 +32,8 @@ Below is an example configuration file that replicates the default settings. You
   },
   "FileMonitor": {
     "enabled": true,
-    "latency": 0.1
+    "latency": 0.1,
+    "reload_indicator_duration": 1.0
   },
   "General": {
     "colorize": false,
@@ -52,7 +53,9 @@ Below is an example configuration file that replicates the default settings. You
     "items": [
       " ",
       { "view": { "text": "VIS" }, "command": { "text": "CMD" } },
-      "   <path><separator><page>:<total_pages> "
+      "   <path> ",
+      { "idle": { "text": " " }, "reload": { "text": "*" } }, 
+      "<separator><page>:<total_pages> "
     ]
   },
   "Cache": {
@@ -80,6 +83,7 @@ The rest of this reference provides detailed explanations for each configuration
     - [Plain Items](#plain-items)
     - [Styled Items](#styled-items)
     - [Mode-aware Items](#mode-aware-items)
+     - [Reload-aware Items](#reload-aware-items)
 - [Cache](#cache)
 
 ---
@@ -165,6 +169,7 @@ The `FileMonitor` section controls the automatic reloading feature, useful for l
 | :--- | :--- | :--- |
 | `enabled` | Boolean | Enables file change detection and automatic reloading |
 | `latency` | Float (seconds) | The time interval between checking for changes |
+| `reload_indicator_duration` | Float (seconds) | How long the reload indicator remains visible (`0.0` disables it) |
 
 ---
 
@@ -207,7 +212,7 @@ The `StatusBar` section controls the information shown at the bottom of the wind
 | :--- | :--- |  :--- |
 | `enabled` | Boolean | Enables the status bar |
 | `style` | [Style](#style) | Default appearance of the entire status bar |
-| `items` | [Items](#items) | Each item is a part of the status bar |
+| `items` | [Items](#items) | Status bar items |
 
 ### Style
 
@@ -240,12 +245,12 @@ The `ul_style` property can be set to one of the following styles:
 
 ### Items
 
-There are three kinds of items:
+The `items` property can be set to an array of status bar items, which include:
 
 * **[plain items](#plain-items)**: text with default styling
 * **[styled items](#styled-items)**: text with custom [styling](#style)
 * **[mode-aware items](#mode-aware-items)**: styled items to be displayed depending on the current mode
-
+* **[reload-aware items](#reload-aware-items)**: styled items to be displayed depending on the current reload indicator state
 #### Plain Items
 
 Plain items are just strings that may include placeholders (e.g., `<page>:<total_pages>`). These placeholders are replaced with dynamic content at runtime.
@@ -292,8 +297,17 @@ Mode-aware items switch their content based on the current mode. Each item must 
 }
 ```
 
+#### Reload-aware Items
+
+Reload-aware items switch their content based on the reload indicator state. Each item must include at least one of:
+
+| Property | Type | Description |
+| :--- | :--- | :--- |
+| `idle` | [Styled item](#styled-items) | Item to display when the reload indicator is off |
+| `reload` | [Styled item](#styled-items) | Item to display when the reload indicator is on |
+
 >[!TIP]
->Try using placeholders in mode-aware items to enhance feedback!
+>Try using placeholders in mode- and reload-aware items to enhance feedback!
 
 ---
 
