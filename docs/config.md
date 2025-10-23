@@ -26,6 +26,7 @@ Below is an example configuration file that replicates the default settings. You
     "width_mode": { "key": "w" },
     "colorize": { "key": "z" },
     "quit": { "key": "c", "modifiers": [ "ctrl" ] },
+    "full_screen": { "key": "f"},
     "enter_command_mode": { "key": ":" },
     "exit_command_mode": { "key": "escape" },
     "execute_command": { "key": "enter" }
@@ -105,6 +106,7 @@ The `KeyMap` section defines keybindings for various actions.
 | `width_mode` | Toggle between full-height or full-width mode |
 | `colorize` | Toggle color replacement |
 | `quit` | Exit the program |
+| `full_screen` | Toggle full screen (i.e. hide status bar) |
 | `enter_command_mode` | Enter command mode |
 | `exit_command_mode` | Exit command mode |
 | `execute_command` | Execute the entered command |

@@ -464,4 +464,8 @@ pub const Context = struct {
             self.current_mode.command.drawCommandBar(win);
         }
     }
+
+    pub fn toggleFullScreen(self: *Self) void {
+        self.config.status_bar.enabled = !self.config.status_bar.enabled;
+    }
 };

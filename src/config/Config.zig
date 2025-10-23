@@ -14,6 +14,7 @@ pub const KeyMap = struct {
     width_mode: vaxis.Key = .{ .codepoint = 'w' },
     colorize: vaxis.Key = .{ .codepoint = 'z' },
     quit: vaxis.Key = .{ .codepoint = 'c', .mods = .{ .ctrl = true } },
+    full_screen: vaxis.Key = .{ .codepoint = 'f' },
     enter_command_mode: vaxis.Key = .{ .codepoint = ':' },
     exit_command_mode: vaxis.Key = .{ .codepoint = vaxis.Key.escape },
     execute_command: vaxis.Key = .{ .codepoint = vaxis.Key.enter },
@@ -23,7 +24,10 @@ pub const KeyMap = struct {
         if (val != .object) return keymap;
 
         inline for (std.meta.fields(KeyMap)) |key| {
-            @field(keymap, key.name) = parseKeyBinding(val.object, key.name, allocator, @field(keymap, key.name));
+            @field(keymap, key.name) = parseKeyBinding(val.object, key.name, allocator, @field(
+                keymap,
+                key.name,
+            ));
         }
 
         return keymap;
@@ -40,9 +44,27 @@ pub const FileMonitor = struct {
         var file_monitor = FileMonitor{};
         if (val != .object) return file_monitor;
 
-        file_monitor.enabled = parseType(bool, val.object, "enabled", allocator, file_monitor.enabled);
-        file_monitor.latency = parseType(f16, val.object, "latency", allocator, file_monitor.latency);
-        file_monitor.reload_indicator_duration = parseType(f16, val.object, "reload_indicator_duration", allocator, file_monitor.reload_indicator_duration);
+        file_monitor.enabled = parseType(
+            bool,
+            val.object,
+            "enabled",
+            allocator,
+            file_monitor.enabled,
+        );
+        file_monitor.latency = parseType(
+            f16,
+            val.object,
+            "latency",
+            allocator,
+            file_monitor.latency,
+        );
+        file_monitor.reload_indicator_duration = parseType(
+            f16,
+            val.object,
+            "reload_indicator_duration",
+            allocator,
+            file_monitor.reload_indicator_duration,
+        );
 
         return file_monitor;
     }
@@ -74,12 +96,16 @@ pub const General = struct {
 
         if (val.object.get("white")) |white| {
             if (parseRGB(white, allocator)) |rgb| {
-                general.white = @intCast((@as(u32, rgb[0]) << 16) | (@as(u32, rgb[1]) << 8) | @as(u32, rgb[2]));
+                general.white = @intCast(
+                    (@as(u32, rgb[0]) << 16) | (@as(u32, rgb[1]) << 8) | @as(u32, rgb[2]),
+                );
             }
         }
         if (val.object.get("black")) |black| {
             if (parseRGB(black, allocator)) |rgb| {
-                general.black = @intCast((@as(u32, rgb[0]) << 16) | (@as(u32, rgb[1]) << 8) | @as(u32, rgb[2]));
+                general.black = @intCast(
+                    (@as(u32, rgb[0]) << 16) | (@as(u32, rgb[1]) << 8) | @as(u32, rgb[2]),
+                );
             }
         }
 
