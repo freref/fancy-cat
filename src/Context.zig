@@ -7,6 +7,7 @@ const Config = @import("config/Config.zig");
 const DocumentHandler = @import("handlers/DocumentHandler.zig");
 const Cache = @import("./Cache.zig");
 const ReloadIndicatorTimer = @import("services/ReloadIndicatorTimer.zig");
+const History = @import("services/History.zig");
 
 pub const panic = vaxis.panic_handler;
 
@@ -38,6 +39,7 @@ pub const Context = struct {
     watcher_thread: ?std.Thread,
     config: *Config,
     current_mode: Mode,
+    history: History,
     reload_page: bool,
     cache: Cache,
     should_check_cache: bool,
@@ -70,6 +72,7 @@ pub const Context = struct {
         const buf = try allocator.alloc(u8, 4096);
         const tty = try vaxis.Tty.init(buf);
         const reload_indicator_timer = ReloadIndicatorTimer.init(config);
+        const history = History.init(allocator, config);
 
         return .{
             .allocator = allocator,
@@ -85,6 +88,7 @@ pub const Context = struct {
             .watcher_thread = null,
             .config = config,
             .current_mode = undefined,
+            .history = history,
             .reload_page = true,
             .cache = Cache.init(allocator, config, vx, &tty),
             .should_check_cache = config.cache.enabled,
@@ -108,6 +112,7 @@ pub const Context = struct {
         if (self.page_info_text.len > 0) self.allocator.free(self.page_info_text);
 
         self.reload_indicator_timer.deinit();
+        self.history.deinit();
         self.cache.deinit();
         self.document_handler.deinit();
         self.vx.deinit(self.allocator, self.tty.writer());
