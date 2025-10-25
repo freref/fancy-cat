@@ -107,14 +107,14 @@ pub const Context = struct {
 
         if (self.page_info_text.len > 0) self.allocator.free(self.page_info_text);
 
-        self.config.deinit();
-        self.allocator.destroy(self.config);
-        self.arena.deinit();
         self.reload_indicator_timer.deinit();
         self.cache.deinit();
         self.document_handler.deinit();
         self.vx.deinit(self.allocator, self.tty.writer());
         self.tty.deinit();
+        self.config.deinit();
+        self.allocator.destroy(self.config);
+        self.arena.deinit();
         self.allocator.free(self.buf);
     }
 
