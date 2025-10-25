@@ -31,8 +31,9 @@ pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
     }
 
     if (key.matches(km.execute_command.codepoint, km.execute_command.mods)) {
-        const cmd = try self.text_input.buf.toOwnedSlice();
-        defer self.context.allocator.free(cmd);
+        const text_input = try self.text_input.buf.toOwnedSlice();
+        defer self.context.allocator.free(text_input);
+        const cmd = std.mem.trim(u8, text_input, &std.ascii.whitespace);
         self.executeCommand(cmd);
         self.context.changeMode(.view);
         return;
@@ -54,17 +55,16 @@ pub fn drawCommandBar(self: *Self, win: vaxis.Window) void {
 }
 
 pub fn executeCommand(self: *Self, cmd: []const u8) void {
-    const cmd_str = std.mem.trim(u8, cmd, " ");
-    if (std.mem.eql(u8, cmd_str, "q")) {
+    if (std.mem.eql(u8, cmd, "q")) {
         self.context.should_quit = true;
         return;
     }
 
-    if (cmd_str.len >= 3) {
-        const axis = cmd_str[0];
-        const sign = cmd_str[1];
+    if (cmd.len >= 3) {
+        const axis = cmd[0];
+        const sign = cmd[1];
         if ((axis == 'x' or axis == 'y') and (sign == '+' or sign == '-')) {
-            const number_str = cmd_str[2..];
+            const number_str = cmd[2..];
             if (std.fmt.parseFloat(f32, number_str)) |amount| {
                 const delta = if (sign == '+') amount else -amount;
                 const dx: f32 = if (axis == 'x') delta else 0.0;
@@ -76,8 +76,8 @@ pub fn executeCommand(self: *Self, cmd: []const u8) void {
         }
     }
 
-    if (std.mem.endsWith(u8, cmd_str, "%")) {
-        const number_str = cmd_str[0 .. cmd_str.len - 1];
+    if (std.mem.endsWith(u8, cmd, "%")) {
+        const number_str = cmd[0 .. cmd.len - 1];
         if (std.fmt.parseFloat(f32, number_str)) |percent| {
             // TODO detect DPI
             const dpi = self.context.document_handler.pdf_handler.config.general.dpi;
@@ -88,7 +88,7 @@ pub fn executeCommand(self: *Self, cmd: []const u8) void {
         return;
     }
 
-    if (std.fmt.parseInt(u16, cmd_str, 10)) |page_num| {
+    if (std.fmt.parseInt(u16, cmd, 10)) |page_num| {
         const success = self.context.document_handler.goToPage(page_num);
         if (success) {
             self.context.resetCurrentPage();
