@@ -55,43 +55,58 @@ pub fn drawCommandBar(self: *Self, win: vaxis.Window) void {
 }
 
 pub fn executeCommand(self: *Self, cmd: []const u8) void {
-    if (std.mem.eql(u8, cmd, "q")) {
-        self.context.should_quit = true;
-        return;
-    }
+    if (self.handleQuit(cmd)) return;
+    if (self.handleGoToPage(cmd)) return;
+    if (self.handleZoom(cmd)) return;
+    if (self.handleScroll(cmd)) return;
+}
 
-    if (cmd.len >= 3) {
-        const axis = cmd[0];
-        const sign = cmd[1];
-        if ((axis == 'x' or axis == 'y') and (sign == '+' or sign == '-')) {
-            const number_str = cmd[2..];
-            if (std.fmt.parseFloat(f32, number_str)) |amount| {
-                const delta = if (sign == '+') amount else -amount;
-                const dx: f32 = if (axis == 'x') delta else 0.0;
-                const dy: f32 = if (axis == 'y') delta else 0.0;
-                self.context.document_handler.offsetScroll(dx, dy);
-                self.context.resetCurrentPage();
-            } else |_| {}
-            return;
-        }
-    }
+fn handleQuit(self: *Self, cmd: []const u8) bool {
+    if (!std.mem.eql(u8, cmd, "q")) return false;
+    self.context.should_quit = true;
+    return true;
+}
 
-    if (std.mem.endsWith(u8, cmd, "%")) {
-        const number_str = cmd[0 .. cmd.len - 1];
-        if (std.fmt.parseFloat(f32, number_str)) |percent| {
-            // TODO detect DPI
-            const dpi = self.context.document_handler.pdf_handler.config.general.dpi;
-            const zoom_factor = (percent * dpi) / 7200.0;
-            self.context.document_handler.setZoom(zoom_factor);
-            self.context.resetCurrentPage();
-        } else |_| {}
-        return;
-    }
+fn handleGoToPage(self: *Self, cmd: []const u8) bool {
+    const page_num = (std.fmt.parseInt(u16, cmd, 10) catch return false);
+    if (!self.context.document_handler.goToPage(page_num)) return false;
 
-    if (std.fmt.parseInt(u16, cmd, 10)) |page_num| {
-        const success = self.context.document_handler.goToPage(page_num);
-        if (success) {
-            self.context.resetCurrentPage();
-        }
-    } else |_| {}
+    self.context.resetCurrentPage();
+    return true;
+}
+
+fn handleZoom(self: *Self, cmd: []const u8) bool {
+    if (!std.mem.endsWith(u8, cmd, "%")) return false;
+
+    const number_str = cmd[0 .. cmd.len - 1];
+    if (std.fmt.parseFloat(f32, number_str)) |percent| {
+        // TODO detect DPI
+        const dpi = self.context.document_handler.pdf_handler.config.general.dpi;
+        const zoom_factor = (percent * dpi) / 7200.0;
+        self.context.document_handler.setZoom(zoom_factor);
+        self.context.resetCurrentPage();
+        return true;
+    } else |_| {
+        return false;
+    }
+}
+
+fn handleScroll(self: *Self, cmd: []const u8) bool {
+    if (cmd.len < 3) return false;
+    const axis = cmd[0];
+    const sign = cmd[1];
+    if ((axis != 'x' and axis != 'y') or (sign != '+' and sign != '-')) return false;
+
+    const number_str = cmd[2..];
+
+    if (std.fmt.parseFloat(f32, number_str)) |amount| {
+        const delta = if (sign == '+') amount else -amount;
+        const dx: f32 = if (axis == 'x') delta else 0.0;
+        const dy: f32 = if (axis == 'y') delta else 0.0;
+        self.context.document_handler.offsetScroll(dx, dy);
+        self.context.resetCurrentPage();
+        return true;
+    } else |_| {
+        return false;
+    }
 }
