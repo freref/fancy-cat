@@ -31,7 +31,9 @@ pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
     }
 
     if (key.matches(km.execute_command.codepoint, km.execute_command.mods)) {
-        self.executeCommand(self.text_input.buf.firstHalf());
+        const cmd = try self.text_input.buf.toOwnedSlice();
+        defer self.context.allocator.free(cmd);
+        self.executeCommand(cmd);
         self.context.changeMode(.view);
         return;
     }
