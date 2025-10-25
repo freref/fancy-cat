@@ -29,7 +29,9 @@ Below is an example configuration file that replicates the default settings. You
     "full_screen": { "key": "f"},
     "enter_command_mode": { "key": ":" },
     "exit_command_mode": { "key": "escape" },
-    "execute_command": { "key": "enter" }
+    "execute_command": { "key": "enter" },
+    "history_back": { "key": "up" },
+    "history_forward": { "key": "down" }
   },
   "FileMonitor": {
     "enabled": true,
@@ -46,7 +48,8 @@ Below is an example configuration file that replicates the default settings. You
     "scroll_step": 100.0,
     "retry_delay": 0.2,
     "timeout": 5.0,
-    "dpi": 96.0
+    "dpi": 96.0,
+    "history": 1000
   },
   "StatusBar": {
     "enabled": true,
@@ -110,6 +113,8 @@ The `KeyMap` section defines keybindings for various actions.
 | `enter_command_mode` | Enter command mode |
 | `exit_command_mode` | Exit command mode |
 | `execute_command` | Execute the entered command |
+| `history_back` | Go back one command in history |
+| `history_forward` | Go forward one command in history |
 
 ### Keybindings
 
@@ -191,6 +196,7 @@ The `General` section includes various display and timing settings.
 | `dpi` | Float | Resolution used for 100% zoom calculation |
 | `retry_delay` | Float (seconds) | Delay before retrying to load a document or render a page |
 | `timeout` | Float (seconds) | Maximum time to keep retrying before giving up on loading a document or rendering a page |
+| `history` | Integer | Maximum number of entries in command history |
 
 >[!TIP]
 >The color replacement feature works by replacing white and black with custom colors, which also affects the full color range depending on contrast. By default, `white` is set to black (`#000000`) and `black` is set to white (`#ffffff`). For a seamless look, try setting `white` to match your terminal’s background color and `black` to match the foreground (text) color.

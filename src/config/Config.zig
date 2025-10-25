@@ -18,6 +18,8 @@ pub const KeyMap = struct {
     enter_command_mode: vaxis.Key = .{ .codepoint = ':' },
     exit_command_mode: vaxis.Key = .{ .codepoint = vaxis.Key.escape },
     execute_command: vaxis.Key = .{ .codepoint = vaxis.Key.enter },
+    history_back: vaxis.Key = .{ .codepoint = vaxis.Key.up },
+    history_forward: vaxis.Key = .{ .codepoint = vaxis.Key.down },
 
     pub fn parse(val: std.json.Value, allocator: std.mem.Allocator) KeyMap {
         var keymap = KeyMap{};
@@ -87,6 +89,8 @@ pub const General = struct {
     timeout: f32 = 5.0,
     // resolution
     dpi: f32 = 96.0,
+    // whole number (possibly 0)
+    history: u32 = 1000,
 
     pub fn parse(val: std.json.Value, allocator: std.mem.Allocator) General {
         var general = General{};
@@ -116,6 +120,7 @@ pub const General = struct {
         general.retry_delay = parseType(f32, val.object, "retry_delay", allocator, general.retry_delay);
         general.timeout = parseType(f32, val.object, "timeout", allocator, general.timeout);
         general.dpi = parseType(f32, val.object, "dpi", allocator, general.dpi);
+        general.history = parseType(u32, val.object, "history", allocator, general.history);
 
         return general;
     }
