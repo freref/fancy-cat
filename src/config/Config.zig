@@ -138,6 +138,7 @@ pub const StatusBar = struct {
     pub const ReloadAwareItem = struct {
         idle: StyledItem,
         reload: StyledItem,
+        watching: StyledItem,
     };
     pub const Item = union(enum) {
         styled: StyledItem,
@@ -167,6 +168,7 @@ pub const StatusBar = struct {
         .{ .reload_aware = .{
             .idle = .{ .text = " ", .style = default_style },
             .reload = .{ .text = "*", .style = default_style },
+            .watching = .{ .text = " ", .style = default_style },
         } },
         .{ .styled = .{ .text = SEPARATOR, .style = default_style } },
         .{ .styled = .{ .text = PAGE, .style = default_style } },
@@ -378,6 +380,7 @@ fn applyStyle(item: StatusBar.Item, style: vaxis.Cell.Style, allocator: std.mem.
     var reload_aware_item: StatusBar.Item = .{ .reload_aware = StatusBar.ReloadAwareItem{
         .idle = StatusBar.StyledItem{ .text = "", .style = style },
         .reload = StatusBar.StyledItem{ .text = "", .style = style },
+        .watching = StatusBar.StyledItem{ .text = "", .style = style },
     } };
 
     switch (item) {
@@ -391,8 +394,9 @@ fn applyStyle(item: StatusBar.Item, style: vaxis.Cell.Style, allocator: std.mem.
             return mode_aware_item;
         },
         .reload_aware => |reload_aware| {
-            reload_aware_item.reload_aware.reload.text = allocator.dupe(u8, reload_aware.reload.text) catch reload_aware_item.reload_aware.reload.text;
             reload_aware_item.reload_aware.idle.text = allocator.dupe(u8, reload_aware.idle.text) catch reload_aware_item.reload_aware.idle.text;
+            reload_aware_item.reload_aware.reload.text = allocator.dupe(u8, reload_aware.reload.text) catch reload_aware_item.reload_aware.reload.text;
+            reload_aware_item.reload_aware.watching.text = allocator.dupe(u8, reload_aware.watching.text) catch reload_aware_item.reload_aware.watching.text;
             return reload_aware_item;
         },
     }
@@ -407,6 +411,7 @@ fn parseItem(val: std.json.Value, allocator: std.mem.Allocator, fallback_style: 
     var reload_aware_item: StatusBar.Item = .{ .reload_aware = StatusBar.ReloadAwareItem{
         .idle = StatusBar.StyledItem{ .text = "", .style = fallback_style },
         .reload = StatusBar.StyledItem{ .text = "", .style = fallback_style },
+        .watching = StatusBar.StyledItem{ .text = "", .style = fallback_style },
     } };
 
     switch (val) {
@@ -421,9 +426,10 @@ fn parseItem(val: std.json.Value, allocator: std.mem.Allocator, fallback_style: 
                 mode_aware_item.mode_aware.command = parseStyledItem(obj.get("command"), allocator, mode_aware_item.mode_aware.command);
                 return mode_aware_item;
             }
-            if (obj.contains("reload") or obj.contains("idle")) {
+            if (obj.contains("idle") or obj.contains("reload") or obj.contains("watching")) {
                 reload_aware_item.reload_aware.idle = parseStyledItem(obj.get("idle"), allocator, reload_aware_item.reload_aware.idle);
                 reload_aware_item.reload_aware.reload = parseStyledItem(obj.get("reload"), allocator, reload_aware_item.reload_aware.reload);
+                reload_aware_item.reload_aware.watching = parseStyledItem(obj.get("watching"), allocator, reload_aware_item.reload_aware.watching);
                 return reload_aware_item;
             }
 
