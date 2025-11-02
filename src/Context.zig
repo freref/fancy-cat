@@ -21,7 +21,7 @@ pub const Event = union(enum) {
 
 pub const ModeType = enum { view, command };
 pub const Mode = union(ModeType) { view: ViewMode, command: CommandMode };
-pub const ReloadIndicatorState = enum { idle, reload };
+pub const ReloadIndicatorState = enum { idle, reload, watching };
 
 pub const Context = struct {
     const Self = @This();
@@ -157,6 +157,7 @@ pub const Context = struct {
             if (self.watcher) |*w| {
                 w.setCallback(callback, &loop);
                 self.watcher_thread = try std.Thread.spawn(.{}, watcherWorker, .{ self, w });
+                self.current_reload_indicator_state = .watching;
                 if (self.config.status_bar.enabled and self.config.file_monitor.reload_indicator_duration > 0) {
                     for (self.config.status_bar.items) |item| {
                         if (item == .reload_aware) {
@@ -235,7 +236,7 @@ pub const Context = struct {
                 }
             },
             .reload_done => {
-                self.current_reload_indicator_state = .idle;
+                self.current_reload_indicator_state = .watching;
             },
         }
     }
@@ -354,8 +355,9 @@ pub const Context = struct {
                 },
                 .reload_aware => |reload_aware| {
                     switch (self.current_reload_indicator_state) {
-                        .reload => try expandPlaceholders(&expanded_items, reload_aware.reload),
                         .idle => try expandPlaceholders(&expanded_items, reload_aware.idle),
+                        .reload => try expandPlaceholders(&expanded_items, reload_aware.reload),
+                        .watching => try expandPlaceholders(&expanded_items, reload_aware.watching),
                     }
                 },
             }
