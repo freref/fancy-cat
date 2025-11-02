@@ -72,7 +72,7 @@ Because fancy-cat provides sensible defaults, you only need to specify the optio
       " ",
       { "view": { "text": "VIS" }, "command": { "text": "CMD" } },
       "   <path> ",
-      { "idle": { "text": " " }, "reload": { "text": "*" } }, 
+      { "idle": { "text": " " }, "reload": { "text": "*" }, "watching": { "text": " " } },
       "<separator><page>:<total_pages> "
     ]
   },
@@ -297,7 +297,7 @@ The `items` property can be set to an array of status bar items, which include:
 * **[plain items](#plain-items)**: text with default styling
 * **[styled items](#styled-items)**: text with custom [styling](#style)
 * **[mode-aware items](#mode-aware-items)**: styled items to be displayed depending on the current mode
-* **[reload-aware items](#reload-aware-items)**: styled items to be displayed depending on the current reload indicator state
+* **[reload-aware items](#reload-aware-items)**: styled items to be displayed depending on the file monitor state and the reload activity
 #### Plain Items
 
 Plain items are just strings that may include placeholders (e.g., `<page>:<total_pages>`). These placeholders are replaced with dynamic content at runtime.
@@ -346,12 +346,13 @@ Mode-aware items switch their content based on the current mode. Each item must 
 
 #### Reload-aware Items
 
-Reload-aware items switch their content based on the reload indicator state. Each item must include at least one of:
+Reload-aware items switch their content based on the file monitor state and the reload activity. Each item must include at least one of:
 
 | Property | Type | Description |
 | :--- | :--- | :--- |
-| `idle` | [Styled item](#styled-items) | Item to display when the reload indicator is off |
-| `reload` | [Styled item](#styled-items) | Item to display when the reload indicator is on |
+| `idle` | [Styled item](#styled-items) | Item to display when the file monitor is disabled |
+| `reload` | [Styled item](#styled-items) | Item to display when the file monitor is enabled and the reload indicator is on |
+| `watching` | [Styled item](#styled-items) | Item to display when the file monitor is enabled and the reload indicator is off |
 
 >[!TIP]
 >Try using placeholders in mode- and reload-aware items to enhance feedback!
