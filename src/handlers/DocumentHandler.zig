@@ -76,8 +76,8 @@ pub fn zoomOut(self: *Self) void {
     self.pdf_handler.zoomOut();
 }
 
-pub fn setZoom(self: *Self, zoom_factor: f32) void {
-    self.pdf_handler.active_zoom = @max(zoom_factor, self.pdf_handler.config.general.zoom_min);
+pub fn setZoom(self: *Self, percent: f32) void {
+    self.pdf_handler.setZoom(percent);
 }
 
 pub fn toggleColor(self: *Self) void {
