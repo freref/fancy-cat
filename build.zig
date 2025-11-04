@@ -90,6 +90,8 @@ pub fn build(b: *std.Build) void {
     });
     exe.headerpad_max_install_names = true;
 
+    if (target.result.os.tag == .macos) exe.linkFramework("CoreGraphics");
+
     const deps = .{
         .vaxis = b.dependency("vaxis", .{ .target = target, .optimize = optimize }),
         .fzwatch = b.dependency("fzwatch", .{ .target = target, .optimize = optimize }),
