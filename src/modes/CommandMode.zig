@@ -140,10 +140,7 @@ fn handleZoom(self: *Self, cmd: []const u8) bool {
 
     const number_str = cmd[0 .. cmd.len - 1];
     if (std.fmt.parseFloat(f32, number_str)) |percent| {
-        // TODO detect DPI
-        const dpi = self.context.document_handler.pdf_handler.config.general.dpi;
-        const zoom_factor = (percent * dpi) / 7200.0;
-        self.context.document_handler.setZoom(zoom_factor);
+        self.context.document_handler.setZoom(percent);
         self.context.resetCurrentPage();
         return true;
     } else |_| {
