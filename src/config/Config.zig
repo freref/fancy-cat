@@ -88,6 +88,7 @@ pub const General = struct {
     retry_delay: f32 = 0.2,
     timeout: f32 = 5.0,
     // resolution
+    detect_dpi: bool = true,
     dpi: f32 = 96.0,
     // whole number (possibly 0)
     history: u32 = 1000,
@@ -119,6 +120,7 @@ pub const General = struct {
         general.scroll_step = parseType(f32, val.object, "scroll_step", allocator, general.scroll_step);
         general.retry_delay = parseType(f32, val.object, "retry_delay", allocator, general.retry_delay);
         general.timeout = parseType(f32, val.object, "timeout", allocator, general.timeout);
+        general.detect_dpi = parseType(bool, val.object, "detect_dpi", allocator, general.detect_dpi);
         general.dpi = parseType(f32, val.object, "dpi", allocator, general.dpi);
         general.history = parseType(u32, val.object, "history", allocator, general.history);
 
