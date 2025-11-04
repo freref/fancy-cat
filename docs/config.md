@@ -62,6 +62,7 @@ Because fancy-cat provides sensible defaults, you only need to specify the optio
     "scroll_step": 100.0,
     "retry_delay": 0.2,
     "timeout": 5.0,
+    "detect_dpi": true,
     "dpi": 96.0,
     "history": 1000
   },
@@ -208,7 +209,8 @@ The `General` section includes various display and timing settings.
 | `zoom_step` | Float | Zoom multiplier per keystroke |
 | `zoom_min` | Float | Minimum zoom level allowed |
 | `scroll_step` | Float (pixels) | Distance the viewport moves per scroll keystroke |
-| `dpi` | Float | Resolution used for 100% zoom calculation |
+| `detect_dpi` | Boolean | Enables pixel-density detection so that 100% zoom = actual size |
+| `dpi` | Float | Pixel density to use if `detect_dpi` is false, or fallback if detection fails |
 | `retry_delay` | Float (seconds) | Delay before retrying to load a document or render a page |
 | `timeout` | Float (seconds) | Maximum time to keep retrying before giving up on loading a document or rendering a page |
 | `history` | Integer | Maximum number of entries in command history |
