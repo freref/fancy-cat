@@ -4,6 +4,8 @@ const fastb64z = @import("fastb64z");
 const vaxis = @import("vaxis");
 const Config = @import("../config/Config.zig");
 const types = @import("./types.zig");
+const Utilities = @import("../utilities/Utilities.zig");
+
 const c = @cImport({
     @cInclude("fitz-z.h");
     @cInclude("mupdf/fitz.h");
@@ -224,6 +226,13 @@ pub fn zoomIn(self: *Self) void {
 
 pub fn zoomOut(self: *Self) void {
     self.active_zoom /= self.config.general.zoom_step;
+}
+
+pub fn setZoom(self: *Self, percent: f32) void {
+    var dpi = self.config.general.dpi;
+    if (self.config.general.detect_dpi) dpi = Utilities.getDPI() orelse dpi;
+
+    self.active_zoom = @max(percent * dpi / 7200.0, self.config.general.zoom_min);
 }
 
 pub fn toggleColor(self: *Self) void {
