@@ -21,7 +21,8 @@ pub fn init(context: *Context) Self {
 pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
     // O(n) but n is small
     // Centralized key handling
-    const key_actions = &[_]KeyAction{
+    const allocator = self.context.arena.allocator();
+    const key_actions = try allocator.dupe(KeyAction, &[_]KeyAction{
         .{
             .codepoint = km.next.codepoint,
             .mods = km.next.mods,
@@ -145,7 +146,7 @@ pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
                 }
             }.action,
         },
-    };
+    });
 
     for (key_actions) |action| {
         if (key.matches(action.codepoint, action.mods)) {
