@@ -220,12 +220,14 @@ pub fn renderPage(
     }
 }
 
-pub fn zoomIn(self: *Self) void {
-    self.active_zoom *= self.config.general.zoom_step;
+pub fn zoomIn(self: *Self, multiplier: f32) void {
+    const step = self.config.general.zoom_step * multiplier;
+    self.active_zoom *= step;
 }
 
-pub fn zoomOut(self: *Self) void {
-    self.active_zoom /= self.config.general.zoom_step;
+pub fn zoomOut(self: *Self, multiplier: f32) void {
+    const step = self.config.general.zoom_step * multiplier;
+    self.active_zoom /= step;
 }
 
 pub fn setZoom(self: *Self, percent: f32) void {
@@ -239,8 +241,8 @@ pub fn toggleColor(self: *Self) void {
     self.config.general.colorize = !self.config.general.colorize;
 }
 
-pub fn scroll(self: *Self, direction: types.ScrollDirection) void {
-    const step = self.config.general.scroll_step / self.active_zoom;
+pub fn scroll(self: *Self, direction: types.ScrollDirection, multiplier: f32) void {
+    const step = self.config.general.scroll_step * multiplier / self.active_zoom;
     switch (direction) {
         .Up => {
             const translation = self.y_offset + step;
