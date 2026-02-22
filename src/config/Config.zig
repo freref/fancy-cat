@@ -6,11 +6,17 @@ pub const KeyMap = struct {
     next: vaxis.Key = .{ .codepoint = 'n' },
     prev: vaxis.Key = .{ .codepoint = 'p' },
     scroll_up: vaxis.Key = .{ .codepoint = 'k' },
+    scroll_up_mult: vaxis.Key = .{ .codepoint = 'k', .mods = .{ .shift = true } },
     scroll_down: vaxis.Key = .{ .codepoint = 'j' },
+    scroll_down_mult: vaxis.Key = .{ .codepoint = 'j', .mods = .{ .shift = true } },
     scroll_left: vaxis.Key = .{ .codepoint = 'h' },
+    scroll_left_mult: vaxis.Key = .{ .codepoint = 'h', .mods = .{ .shift = true } },
     scroll_right: vaxis.Key = .{ .codepoint = 'l' },
+    scroll_right_mult: vaxis.Key = .{ .codepoint = 'l', .mods = .{ .shift = true } },
     zoom_in: vaxis.Key = .{ .codepoint = 'i' },
+    zoom_in_mult: vaxis.Key = .{ .codepoint = 'i', .mods = .{ .shift = true } },
     zoom_out: vaxis.Key = .{ .codepoint = 'o' },
+    zoom_out_mult: vaxis.Key = .{ .codepoint = 'o', .mods = .{ .shift = true } },
     width_mode: vaxis.Key = .{ .codepoint = 'w' },
     colorize: vaxis.Key = .{ .codepoint = 'z' },
     quit: vaxis.Key = .{ .codepoint = 'c', .mods = .{ .ctrl = true } },
@@ -84,6 +90,9 @@ pub const General = struct {
     zoom_min: f32 = 1.0,
     // pixels
     scroll_step: f32 = 100.0,
+    // multiplier
+    zoom_mult: f32 = 2.0,
+    scroll_mult: f32 = 10.0,
     // seconds
     retry_delay: f32 = 0.2,
     timeout: f32 = 5.0,
@@ -118,6 +127,8 @@ pub const General = struct {
         general.zoom_step = parseType(f32, val.object, "zoom_step", allocator, general.zoom_step);
         general.zoom_min = parseType(f32, val.object, "zoom_min", allocator, general.zoom_min);
         general.scroll_step = parseType(f32, val.object, "scroll_step", allocator, general.scroll_step);
+        general.zoom_mult = parseType(f32, val.object, "zoom_mult", allocator, general.zoom_mult);
+        general.scroll_mult = parseType(f32, val.object, "scroll_mult", allocator, general.scroll_mult);
         general.retry_delay = parseType(f32, val.object, "retry_delay", allocator, general.retry_delay);
         general.timeout = parseType(f32, val.object, "timeout", allocator, general.timeout);
         general.detect_dpi = parseType(bool, val.object, "detect_dpi", allocator, general.detect_dpi);
