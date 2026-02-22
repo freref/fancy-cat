@@ -68,12 +68,12 @@ pub fn renderPage(
     return try self.pdf_handler.renderPage(page_number, window_width, window_height);
 }
 
-pub fn zoomIn(self: *Self) void {
-    self.pdf_handler.zoomIn();
+pub fn zoomIn(self: *Self, multiplier: f32) void {
+    self.pdf_handler.zoomIn(multiplier);
 }
 
-pub fn zoomOut(self: *Self) void {
-    self.pdf_handler.zoomOut();
+pub fn zoomOut(self: *Self, multiplier: f32) void {
+    self.pdf_handler.zoomOut(multiplier);
 }
 
 pub fn setZoom(self: *Self, percent: f32) void {
@@ -84,8 +84,8 @@ pub fn toggleColor(self: *Self) void {
     self.pdf_handler.toggleColor();
 }
 
-pub fn scroll(self: *Self, direction: types.ScrollDirection) void {
-    self.pdf_handler.scroll(direction);
+pub fn scroll(self: *Self, direction: types.ScrollDirection, multiplier: f32) void {
+    self.pdf_handler.scroll(direction, multiplier);
 }
 
 pub fn offsetScroll(self: *Self, dx: f32, dy: f32) void {
