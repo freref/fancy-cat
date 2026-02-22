@@ -32,11 +32,17 @@ Because fancy-cat provides sensible defaults, you only need to specify the optio
     "next": { "key": "n" },
     "prev": { "key": "p" },
     "scroll_up": { "key": "k" },
+    "scroll_up_mult": { "key": "k", "modifiers": [ "shift" ] },
     "scroll_down": { "key": "j" },
+    "scroll_down_mult": { "key": "j", "modifiers": [ "shift" ] },
     "scroll_left": { "key": "h" },
+    "scroll_left_mult": { "key": "h", "modifiers": [ "shift" ] },
     "scroll_right": { "key": "l" },
+    "scroll_right_mult": { "key": "l", "modifiers": [ "shift" ] },
     "zoom_in": { "key": "i" },
+    "zoom_in_mult": { "key": "i", "modifiers": [ "shift" ] },
     "zoom_out": { "key": "o" },
+    "zoom_out_mult": { "key": "o", "modifiers": [ "shift" ] },
     "width_mode": { "key": "w" },
     "colorize": { "key": "z" },
     "quit": { "key": "c", "modifiers": [ "ctrl" ] },
@@ -58,8 +64,10 @@ Because fancy-cat provides sensible defaults, you only need to specify the optio
     "black": "#ffffff",
     "size": 1.0,
     "zoom_step": 1.25,
+    "zoom_mult": 2.0,
     "zoom_min": 1.0,
     "scroll_step": 100.0,
+    "scroll_mult": 10.0,
     "retry_delay": 0.2,
     "timeout": 5.0,
     "detect_dpi": true,
@@ -117,11 +125,17 @@ The `KeyMap` section defines keybindings for various actions.
 | `next` | Go to the next page |
 | `prev` | Go to the previous page |
 | `scroll_up` | Move the viewport up |
+| `scroll_up_mult` | Multiplied `scroll_up` |
 | `scroll_down` | Move the viewport down |
+| `scroll_down_mult` | Multiplied `scroll_down` |
 | `scroll_left` | Move the viewport left |
+| `scroll_left_mult` | Multiplied `scroll_left` |
 | `scroll_right` | Move the viewport right |
+| `scroll_right_mult` | Multiplied `scroll_right` |
 | `zoom_in` | Increase the zoom level |
+| `zoom_in_mult` | Multiplied `zoom_in` |
 | `zoom_out` | Decrease the zoom level |
+| `zoom_out_mult` | Multiplied `zoom_out` |
 | `width_mode` | Toggle between full-height or full-width mode |
 | `colorize` | Toggle color replacement |
 | `quit` | Exit the program |
@@ -207,8 +221,10 @@ The `General` section includes various display and timing settings.
 | `black` | [Color](#color) | Replacement color for black |
 | `size` | Float | Initial zoom level multiplier (`1.0` fits the full height) |
 | `zoom_step` | Float | Zoom multiplier per keystroke |
+| `zoom_mult` | Float | Extra zoom multiplier for multiplied zoom actions |
 | `zoom_min` | Float | Minimum zoom level allowed |
 | `scroll_step` | Float (pixels) | Distance the viewport moves per scroll keystroke |
+| `scroll_mult` | Float | Scroll multiplier for multiplied scroll actions |
 | `detect_dpi` | Boolean | Enables pixel-density detection so that 100% zoom = actual size |
 | `dpi` | Float | Pixel density to use if `detect_dpi` is false, or fallback if detection fails |
 | `retry_delay` | Float (seconds) | Delay before retrying to load a document or render a page |
