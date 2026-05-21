@@ -182,6 +182,8 @@ pub const Context = struct {
             var buffered = self.tty.writer();
             try self.vx.render(buffered);
             try buffered.flush();
+
+            _ = self.arena.reset(.retain_capacity); // clear key actions from heap
         }
     }
 

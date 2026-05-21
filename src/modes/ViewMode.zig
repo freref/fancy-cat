@@ -21,15 +21,14 @@ pub fn init(context: *Context) Self {
 pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
     // O(n) but n is small
     // Centralized key handling
-    const key_actions = &[_]KeyAction{
+    const allocator = self.context.arena.allocator();
+    const key_actions = try allocator.dupe(KeyAction, &[_]KeyAction{
         .{
             .codepoint = km.next.codepoint,
             .mods = km.next.mods,
             .handler = struct {
                 fn action(s: *Context) void {
-                    if (s.document_handler.changePage(1)) {
-                        s.resetCurrentPage();
-                    }
+                    if (s.document_handler.changePage(1)) s.resetCurrentPage();
                 }
             }.action,
         },
@@ -38,9 +37,7 @@ pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
             .mods = km.prev.mods,
             .handler = struct {
                 fn action(s: *Context) void {
-                    if (s.document_handler.changePage(-1)) {
-                        s.resetCurrentPage();
-                    }
+                    if (s.document_handler.changePage(-1)) s.resetCurrentPage();
                 }
             }.action,
         },
@@ -49,7 +46,17 @@ pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
             .mods = km.zoom_in.mods,
             .handler = struct {
                 fn action(s: *Context) void {
-                    s.document_handler.zoomIn();
+                    s.document_handler.zoomIn(1.0);
+                    s.reload_page = true;
+                }
+            }.action,
+        },
+        .{
+            .codepoint = km.zoom_in_mult.codepoint,
+            .mods = km.zoom_in_mult.mods,
+            .handler = struct {
+                fn action(s: *Context) void {
+                    s.document_handler.zoomIn(s.config.general.zoom_mult);
                     s.reload_page = true;
                 }
             }.action,
@@ -59,7 +66,17 @@ pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
             .mods = km.zoom_out.mods,
             .handler = struct {
                 fn action(s: *Context) void {
-                    s.document_handler.zoomOut();
+                    s.document_handler.zoomOut(1.0);
+                    s.reload_page = true;
+                }
+            }.action,
+        },
+        .{
+            .codepoint = km.zoom_out_mult.codepoint,
+            .mods = km.zoom_out_mult.mods,
+            .handler = struct {
+                fn action(s: *Context) void {
+                    s.document_handler.zoomOut(s.config.general.zoom_mult);
                     s.reload_page = true;
                 }
             }.action,
@@ -91,7 +108,17 @@ pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
             .mods = km.scroll_up.mods,
             .handler = struct {
                 fn action(s: *Context) void {
-                    s.document_handler.scroll(.Up);
+                    s.document_handler.scroll(.Up, 1.0);
+                    s.reload_page = true;
+                }
+            }.action,
+        },
+        .{
+            .codepoint = km.scroll_up_mult.codepoint,
+            .mods = km.scroll_up_mult.mods,
+            .handler = struct {
+                fn action(s: *Context) void {
+                    s.document_handler.scroll(.Up, s.config.general.scroll_mult);
                     s.reload_page = true;
                 }
             }.action,
@@ -101,7 +128,17 @@ pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
             .mods = km.scroll_down.mods,
             .handler = struct {
                 fn action(s: *Context) void {
-                    s.document_handler.scroll(.Down);
+                    s.document_handler.scroll(.Down, 1.0);
+                    s.reload_page = true;
+                }
+            }.action,
+        },
+        .{
+            .codepoint = km.scroll_down_mult.codepoint,
+            .mods = km.scroll_down_mult.mods,
+            .handler = struct {
+                fn action(s: *Context) void {
+                    s.document_handler.scroll(.Down, s.config.general.scroll_mult);
                     s.reload_page = true;
                 }
             }.action,
@@ -111,7 +148,17 @@ pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
             .mods = km.scroll_left.mods,
             .handler = struct {
                 fn action(s: *Context) void {
-                    s.document_handler.scroll(.Left);
+                    s.document_handler.scroll(.Left, 1.0);
+                    s.reload_page = true;
+                }
+            }.action,
+        },
+        .{
+            .codepoint = km.scroll_left_mult.codepoint,
+            .mods = km.scroll_left_mult.mods,
+            .handler = struct {
+                fn action(s: *Context) void {
+                    s.document_handler.scroll(.Left, s.config.general.scroll_mult);
                     s.reload_page = true;
                 }
             }.action,
@@ -121,7 +168,17 @@ pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
             .mods = km.scroll_right.mods,
             .handler = struct {
                 fn action(s: *Context) void {
-                    s.document_handler.scroll(.Right);
+                    s.document_handler.scroll(.Right, 1.0);
+                    s.reload_page = true;
+                }
+            }.action,
+        },
+        .{
+            .codepoint = km.scroll_right_mult.codepoint,
+            .mods = km.scroll_right_mult.mods,
+            .handler = struct {
+                fn action(s: *Context) void {
+                    s.document_handler.scroll(.Right, s.config.general.scroll_mult);
                     s.reload_page = true;
                 }
             }.action,
@@ -145,7 +202,7 @@ pub fn handleKeyStroke(self: *Self, key: vaxis.Key, km: Config.KeyMap) !void {
                 }
             }.action,
         },
-    };
+    });
 
     for (key_actions) |action| {
         if (key.matches(action.codepoint, action.mods)) {
