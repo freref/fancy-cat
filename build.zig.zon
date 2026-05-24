@@ -1,6 +1,6 @@
 .{
     .name = .fancy_cat,
-    .version = "0.5.0",
+    .version = "0.6.0",
     .fingerprint = 0x866b011980aee471, // Changing this has security and trust implications.
     .minimum_zig_version = "0.15.2",
     .dependencies = .{
