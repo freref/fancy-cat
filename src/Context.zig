@@ -117,6 +117,7 @@ pub const Context = struct {
         self.history.deinit();
         self.cache.deinit();
         self.document_handler.deinit();
+        if (self.config.general.progress_bar) self.tty.writer().writeAll("\x1b]9;4;0;0\x07") catch {};
         self.vx.deinit(self.allocator, self.tty.writer());
         self.tty.deinit();
         self.config.deinit();
