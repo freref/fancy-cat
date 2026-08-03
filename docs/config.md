@@ -72,7 +72,8 @@ Because fancy-cat provides sensible defaults, you only need to specify the optio
     "timeout": 5.0,
     "detect_dpi": true,
     "dpi": 96.0,
-    "history": 1000
+    "history": 1000,
+    "progress_bar": false
   },
   "StatusBar": {
     "enabled": true,
@@ -230,6 +231,7 @@ The `General` section includes various display and timing settings.
 | `retry_delay` | Float (seconds) | Delay before retrying to load a document or render a page |
 | `timeout` | Float (seconds) | Maximum time to keep retrying before giving up on loading a document or rendering a page |
 | `history` | Integer | Maximum number of entries in command history |
+| `progress_bar` | Boolean | Use graphical progress bar for reload indicator (requires a terminal with OSC 9;4 support) |
 
 >[!TIP]
 >The color replacement feature works by replacing white and black with custom colors, which also affects the full color range depending on contrast. By default, `white` is set to black (`#000000`) and `black` is set to white (`#ffffff`). For a seamless look, try setting `white` to match your terminal’s background color and `black` to match the foreground (text) color.

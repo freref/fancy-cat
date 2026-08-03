@@ -158,13 +158,19 @@ pub const Context = struct {
                 w.setCallback(callback, &loop);
                 self.watcher_thread = try std.Thread.spawn(.{}, watcherWorker, .{ self, w });
                 self.current_reload_indicator_state = .watching;
-                if (self.config.status_bar.enabled and self.config.file_monitor.reload_indicator_duration > 0) {
-                    for (self.config.status_bar.items) |item| {
-                        if (item == .reload_aware) {
-                            try self.reload_indicator_timer.start(&loop);
-                            self.reload_indicator_active = true;
-                            break;
+                if (self.config.file_monitor.reload_indicator_duration > 0) {
+                    var need_reload_indicator = self.config.general.progress_bar;
+                    if (!need_reload_indicator and self.config.status_bar.enabled) {
+                        for (self.config.status_bar.items) |item| {
+                            if (item == .reload_aware) {
+                                need_reload_indicator = true;
+                                break;
+                            }
                         }
+                    }
+                    if (need_reload_indicator) {
+                        try self.reload_indicator_timer.start(&loop);
+                        self.reload_indicator_active = true;
                     }
                 }
             }
@@ -233,11 +239,13 @@ pub const Context = struct {
                 self.cache.clear();
                 self.reload_page = true;
                 if (self.reload_indicator_active) {
+                    if (self.config.general.progress_bar) try self.tty.writer().print("\x1b]9;4;1;100\x07", .{});
                     self.current_reload_indicator_state = .reload;
                     self.reload_indicator_timer.notifyChange();
                 }
             },
             .reload_done => {
+                if (self.config.general.progress_bar) try self.tty.writer().print("\x1b]9;4;0;0\x07", .{});
                 self.current_reload_indicator_state = .watching;
             },
         }

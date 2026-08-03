@@ -101,6 +101,8 @@ pub const General = struct {
     dpi: f32 = 96.0,
     // whole number (possibly 0)
     history: u32 = 1000,
+    // terminal gui
+    progress_bar: bool = false,
 
     pub fn parse(val: std.json.Value, allocator: std.mem.Allocator) General {
         var general = General{};
@@ -134,6 +136,7 @@ pub const General = struct {
         general.detect_dpi = parseType(bool, val.object, "detect_dpi", allocator, general.detect_dpi);
         general.dpi = parseType(f32, val.object, "dpi", allocator, general.dpi);
         general.history = parseType(u32, val.object, "history", allocator, general.history);
+        general.progress_bar = parseType(bool, val.object, "progress_bar", allocator, general.progress_bar);
 
         return general;
     }
