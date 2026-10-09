@@ -1,0 +1,182 @@
+//! An ANSI VT Parser
+const Parser = @This();
+
+const std = @import("std");
+const Reader = std.Io.Reader;
+const ansi = @import("ansi.zig");
+
+/// A terminal event
+const Event = union(enum) {
+    print: []const u8,
+    c0: ansi.C0,
+    escape: []const u8,
+    ss2: u8,
+    ss3: u8,
+    csi: ansi.CSI,
+    osc: []const u8,
+    apc: []const u8,
+};
+
+buf: std.array_list.Managed(u8),
+/// a leftover byte from a ground event
+pending_byte: ?u8 = null,
+
+pub fn parseReader(self: *Parser, reader: *Reader) !Event {
+    self.buf.clearRetainingCapacity();
+    while (true) {
+        const b = if (self.pending_byte) |p| p else try reader.takeByte();
+        self.pending_byte = null;
+        switch (b) {
+            // Escape sequence
+            0x1b => {
+                const next = try reader.takeByte();
+                switch (next) {
+                    0x4E => return .{ .ss2 = try reader.takeByte() },
+                    0x4F => return .{ .ss3 = try reader.takeByte() },
+                    0x50 => try skipUntilST(reader), // DCS
+                    0x58 => try skipUntilST(reader), // SOS
+                    0x5B => return self.parseCsi(reader), // CSI
+                    0x5D => return self.parseOsc(reader), // OSC
+                    0x5E => try skipUntilST(reader), // PM
+                    0x5F => return self.parseApc(reader), // APC
+
+                    0x20...0x2F => {
+                        try self.buf.append(next);
+                        return self.parseEscape(reader); // ESC
+                    },
+                    else => {
+                        try self.buf.append(next);
+                        return .{ .escape = self.buf.items };
+                    },
+                }
+            },
+            // C0 control
+            0x00...0x1a,
+            0x1c...0x1f,
+            => return .{ .c0 = @enumFromInt(b) },
+            else => {
+                try self.buf.append(b);
+                return self.parseGround(reader);
+            },
+        }
+    }
+}
+
+inline fn parseGround(self: *Parser, reader: *Reader) !Event {
+    var buf: [1]u8 = undefined;
+    {
+        std.debug.assert(self.buf.items.len > 0);
+        // Handle first byte
+        const len = try std.unicode.utf8ByteSequenceLength(self.buf.items[0]);
+        var i: usize = 1;
+        while (i < len) : (i += 1) {
+            const read = try reader.readSliceShort(&buf);
+            if (read == 0) return error.EOF;
+            try self.buf.append(buf[0]);
+        }
+    }
+    while (true) {
+        if (reader.bufferedLen() == 0) return .{ .print = self.buf.items };
+        const n = try reader.readSliceShort(&buf);
+        if (n == 0) return error.EOF;
+        const b = buf[0];
+        switch (b) {
+            0x00...0x1f => {
+                self.pending_byte = b;
+                return .{ .print = self.buf.items };
+            },
+            else => {
+                try self.buf.append(b);
+                const len = try std.unicode.utf8ByteSequenceLength(b);
+                var i: usize = 1;
+                while (i < len) : (i += 1) {
+                    const read = try reader.readSliceShort(&buf);
+                    if (read == 0) return error.EOF;
+
+                    try self.buf.append(buf[0]);
+                }
+            },
+        }
+    }
+}
+
+/// parse until b >= 0x30
+inline fn parseEscape(self: *Parser, reader: *Reader) !Event {
+    while (true) {
+        const b = try reader.takeByte();
+        switch (b) {
+            0x20...0x2F => continue,
+            else => {
+                try self.buf.append(b);
+                return .{ .escape = self.buf.items };
+            },
+        }
+    }
+}
+
+inline fn parseApc(self: *Parser, reader: *Reader) !Event {
+    while (true) {
+        const b = try reader.takeByte();
+        switch (b) {
+            0x00...0x17,
+            0x19,
+            0x1c...0x1f,
+            => continue,
+            0x1b => {
+                _ = try reader.discard(std.Io.Limit.limited(1));
+                return .{ .apc = self.buf.items };
+            },
+            else => try self.buf.append(b),
+        }
+    }
+}
+
+/// Skips sequences until we see an ST (String Terminator, ESC \)
+inline fn skipUntilST(reader: *Reader) !void {
+    _ = try reader.discardDelimiterExclusive('\x1b');
+    _ = try reader.discard(std.Io.Limit.limited(1));
+}
+
+/// Parses an OSC sequence
+inline fn parseOsc(self: *Parser, reader: *Reader) !Event {
+    while (true) {
+        const b = try reader.takeByte();
+        switch (b) {
+            0x00...0x06,
+            0x08...0x17,
+            0x19,
+            0x1c...0x1f,
+            => continue,
+            0x1b => {
+                _ = try reader.discard(std.Io.Limit.limited(1));
+                return .{ .osc = self.buf.items };
+            },
+            0x07 => return .{ .osc = self.buf.items },
+            else => try self.buf.append(b),
+        }
+    }
+}
+
+inline fn parseCsi(self: *Parser, reader: *Reader) !Event {
+    var intermediate: ?u8 = null;
+    var pm: ?u8 = null;
+
+    while (true) {
+        const b = try reader.takeByte();
+        switch (b) {
+            0x20...0x2F => intermediate = b,
+            0x30...0x3B => try self.buf.append(b),
+            0x3C...0x3F => pm = b, // we only allow one
+            // Really we should execute C0 controls, but we just ignore them
+            0x40...0xFF => return .{
+                .csi = .{
+                    .intermediate = intermediate,
+                    .private_marker = pm,
+                    .params = self.buf.items,
+                    .final = b,
+                },
+            },
+            else => continue,
+        }
+    }
+}

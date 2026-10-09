@@ -8,6 +8,8 @@ const DocumentHandler = @import("handlers/DocumentHandler.zig");
 const Cache = @import("./Cache.zig");
 const ReloadIndicatorTimer = @import("services/ReloadIndicatorTimer.zig");
 const History = @import("services/History.zig");
+const Tmux = @import("graphics/Tmux.zig");
+const Ticker = @import("graphics/Ticker.zig");
 
 pub const panic = vaxis.panic_handler;
 
@@ -17,6 +19,8 @@ pub const Event = union(enum) {
     winsize: vaxis.Winsize,
     file_changed,
     reload_done: usize,
+    graphics_response: struct { id: u32, ok: bool },
+    graphics_tick,
 };
 
 pub const ModeType = enum { view, command };
@@ -47,6 +51,12 @@ pub const Context = struct {
     current_reload_indicator_state: ReloadIndicatorState,
     reload_indicator_active: bool,
     buf: []u8,
+    tmux_graphics: ?Tmux,
+    image_changed: bool = false,
+    graphics_visible: bool = true,
+    pending_resize: ?vaxis.Winsize = null,
+    resize_at: i64 = 0,
+    retired_image: ?u32 = null,
 
     pub fn init(allocator: std.mem.Allocator, args: [][:0]u8) !Self {
         const path = args[1];
@@ -97,6 +107,7 @@ pub const Context = struct {
             .current_reload_indicator_state = .idle,
             .reload_indicator_active = false,
             .buf = buf,
+            .tmux_graphics = if (std.posix.getenv("TMUX") != null) Tmux.init(allocator) else null,
         };
     }
 
@@ -115,10 +126,15 @@ pub const Context = struct {
 
         self.reload_indicator_timer.deinit();
         self.history.deinit();
+        if (self.tmux_graphics != null) {
+            if (self.retired_image) |image_id| Tmux.freeImage(self.tty.writer(), image_id);
+            if (self.current_page) |image| Tmux.freeImage(self.tty.writer(), image.id);
+        }
         self.cache.deinit();
         self.document_handler.deinit();
         if (self.config.general.progress_bar) self.tty.writer().writeAll("\x1b]9;4;0;0\x07") catch {};
         self.vx.deinit(self.allocator, self.tty.writer());
+        if (self.tmux_graphics) |*graphics| graphics.deinit();
         self.tty.deinit();
         self.config.deinit();
         self.allocator.destroy(self.config);
@@ -152,7 +168,11 @@ pub const Context = struct {
         defer loop.stop();
         try self.vx.enterAltScreen(self.tty.writer());
         try self.vx.queryTerminal(self.tty.writer(), 1 * std.time.ns_per_s);
+        if (self.tmux_graphics) |*graphics| try graphics.probe(&self.vx, self.tty.writer());
         try self.vx.setMouseMode(self.tty.writer(), true);
+        var ticker: Ticker = .{ .loop = &loop };
+        if (self.tmux_graphics != null) ticker.thread = try std.Thread.spawn(.{}, Ticker.run, .{&ticker});
+        defer ticker.deinit();
 
         if (self.config.file_monitor.enabled) {
             if (self.watcher) |*w| {
@@ -184,11 +204,40 @@ pub const Context = struct {
                 try self.update(event);
             }
 
-            try self.draw();
+            if (self.should_quit) break;
+            if (self.pending_resize) |geometry| {
+                // Keep the old tmux grid while a drag is in progress. The ticker
+                // wakes us after the last resize without blocking input.
+                if (std.time.milliTimestamp() - self.resize_at < 150) continue;
+                try self.vx.resize(self.allocator, self.tty.writer(), geometry);
+                self.pending_resize = null;
+                self.cache.clear();
+                self.reload_page = true;
+            }
+            if (self.tmux_graphics != null and !self.graphics_visible) continue;
+            self.draw() catch |err| {
+                if (self.tmux_graphics != null and (err == error.GraphicsTransmissionFailed or err == error.GraphicsPlacementFailed)) {
+                    self.reload_page = true;
+                    continue; // focus/redraw can temporarily route replies elsewhere
+                }
+                return err;
+            };
 
             var buffered = self.tty.writer();
             try self.vx.render(buffered);
             try buffered.flush();
+            if (self.retired_image) |image_id| {
+                // New placeholder cells are now delivered; deleting the old
+                // image before this point produces a visible blank frame.
+                Tmux.freeImage(buffered, image_id);
+                try buffered.flush();
+                self.retired_image = null;
+            }
+            if (self.tmux_graphics != null and self.image_changed) {
+                Tmux.refresh(self.allocator);
+                self.image_changed = false;
+                std.Thread.sleep(100 * std.time.ns_per_ms);
+            }
 
             _ = self.arena.reset(.retain_capacity); // clear key actions from heap
         }
@@ -230,10 +279,44 @@ pub const Context = struct {
         switch (event) {
             .key_press => |key| try self.handleKeyStroke(key),
             .mouse => |mouse| self.mouse = mouse,
+            .graphics_response => {},
+            .graphics_tick => {
+                const output = std.process.Child.run(.{ .allocator = self.allocator, .argv = &.{ "tmux", "display-message", "-p", "-t", std.posix.getenv("TMUX_PANE") orelse "", "#{window_active} #{session_attached} #{pane_active}" } }) catch return;
+                defer self.allocator.free(output.stdout);
+                defer self.allocator.free(output.stderr);
+                const visible = std.mem.startsWith(u8, output.stdout, "1 ") and !std.mem.startsWith(u8, output.stdout, "1 0") and std.mem.endsWith(u8, std.mem.trim(u8, output.stdout, "\r\n"), " 1");
+                if (visible and !self.graphics_visible) {
+                    // A client may have detached/re-attached or a hidden PDF may
+                    // have changed. Re-send; don't assume its image store survived.
+                    self.reload_page = true;
+                    self.vx.queueRefresh();
+                }
+                self.graphics_visible = visible;
+            },
             .winsize => |ws| {
-                try self.vx.resize(self.allocator, self.tty.writer(), ws);
-                self.cache.clear();
-                self.reload_page = true;
+                var geometry = ws;
+                if (self.tmux_graphics != null and (geometry.x_pixel == 0 or geometry.y_pixel == 0)) {
+                    var cell_w: u16 = 8;
+                    var cell_h: u16 = 16;
+                    const result = std.process.Child.run(.{ .allocator = self.allocator, .argv = &.{ "tmux", "display-message", "-p", "#{client_cell_width} #{client_cell_height}" } }) catch null;
+                    if (result) |output| {
+                        defer self.allocator.free(output.stdout);
+                        defer self.allocator.free(output.stderr);
+                        var parts = std.mem.tokenizeAny(u8, output.stdout, " \r\n");
+                        if (parts.next()) |part| cell_w = std.fmt.parseInt(u16, part, 10) catch 8;
+                        if (parts.next()) |part| cell_h = std.fmt.parseInt(u16, part, 10) catch 16;
+                    }
+                    geometry.x_pixel = geometry.cols *| @max(cell_w, 1);
+                    geometry.y_pixel = geometry.rows *| @max(cell_h, 1);
+                }
+                if (self.tmux_graphics != null and self.current_page != null) {
+                    self.pending_resize = geometry;
+                    self.resize_at = std.time.milliTimestamp();
+                } else {
+                    try self.vx.resize(self.allocator, self.tty.writer(), geometry);
+                    self.cache.clear();
+                    self.reload_page = true;
+                }
             },
             .file_changed => {
                 try self.document_handler.reloadDocument();
@@ -269,7 +352,7 @@ pub const Context = struct {
             .y_offset = @as(i32, @intFromFloat(self.document_handler.getYOffset() * 1000.0)),
         };
 
-        if (self.should_check_cache) {
+        if (self.should_check_cache and self.tmux_graphics == null) {
             if (self.cache.get(cache_key)) |cached| {
                 self.should_check_cache = false;
                 return cached.image;
@@ -282,6 +365,13 @@ pub const Context = struct {
             window_height,
         );
         defer self.allocator.free(encoded_image.base64);
+
+        if (self.tmux_graphics) |*graphics| {
+            const image = try graphics.transmit(&self.vx, self.tty.writer(), encoded_image.base64, encoded_image.width, encoded_image.height);
+            if (self.retired_image) |old_id| Tmux.freeImage(self.tty.writer(), old_id);
+            if (self.current_page) |old| self.retired_image = old.id;
+            return image;
+        }
 
         const image = try self.vx.transmitPreEncodedImage(
             self.tty.writer(),
@@ -319,22 +409,30 @@ pub const Context = struct {
             );
 
             self.reload_page = false;
+            self.image_changed = true;
         }
 
         if (self.current_page) |img| {
             const dims = try img.cellSize(win);
-            const x_off = (win.width - dims.cols) / 2;
-            var y_off = (win.height - dims.rows) / 2;
+            const cols = if (self.tmux_graphics != null) @min(dims.cols, @min(win.width, 297)) else @min(dims.cols, win.width);
+            const reserved_rows: u16 = if (self.config.status_bar.enabled) 2 else 1;
+            const rows = if (self.tmux_graphics != null) @min(dims.rows, @min(win.height -| reserved_rows, 297)) else @min(dims.rows, win.height);
+            const x_off = (win.width -| cols) / 2;
+            var y_off = (win.height -| rows) / 2;
             if (self.config.status_bar.enabled) {
                 y_off -|= 1; // room for status bar
             }
             const center = win.child(.{
                 .x_off = x_off,
                 .y_off = y_off,
-                .width = dims.cols,
-                .height = dims.rows,
+                .width = cols,
+                .height = rows,
             });
-            try img.draw(center, .{ .scale = .contain });
+            if (self.tmux_graphics) |*graphics| {
+                if (cols == 0 or rows == 0) return;
+                if (self.image_changed) try graphics.place(&self.vx, self.tty.writer(), img, cols, rows);
+                try graphics.draw(center, img.id);
+            } else try img.draw(center, .{ .scale = .contain });
         }
     }
 

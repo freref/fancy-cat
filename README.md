@@ -29,6 +29,11 @@ fancy-cat can be configured through a JSON configuration file located in one of 
 
 An example `config.json` and documentation can be found [here](./docs/config.md).
 
+## tmux
+
+For tmux 3.6, enable `set -g allow-passthrough on` and use a terminal with
+Kitty Unicode placeholder support. See [tmux backend and verification](docs/tmux.md).
+
 ## Installation
 
 `fancy-cat` is available in the following repositories:

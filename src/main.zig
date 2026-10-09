@@ -8,8 +8,9 @@ const Context = @import("Context.zig").Context;
 const PackageName = enum { fancy_cat };
 
 const DependencyType = struct {
-    url: []const u8,
-    hash: []const u8,
+    url: []const u8 = "",
+    hash: []const u8 = "",
+    path: ?[]const u8 = null,
 };
 
 const DependenciesType = struct {
