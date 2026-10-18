@@ -339,8 +339,9 @@ pub const Context = struct {
     }
 
     pub fn drawStatusBar(self: *Self, win: vaxis.Window) !void {
+        // The status text lives in the arena until vx.render has compared the
+        // cells, so the run loop resets the arena after rendering, not here.
         const arena = self.arena.allocator();
-        defer _ = self.arena.reset(.retain_capacity);
 
         const status_bar = win.child(.{
             .x_off = 0,
